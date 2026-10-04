@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { apiFetch } from '@/lib/mobile/api-client';
+import { LineChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
+import { MessageSquare, Scale, Info, Send } from 'lucide-react-native';
+
+const screenWidth = Dimensions.get("window").width;
+
+export default function HealthHubScreen() {
+  const [loading, setLoading] = useState(true);
+  const [weightData, setWeightData] = useState<any>(null);
+  const [weight, setWeight] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Hello! I am your GlucoPlate health assistant. How can I help you with your diabetic meal planning today?' }
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  useEffect(() => {
+    loadHealthData();
+  }, []);
+
+  async function loadHealthData() {
+    setLoading(true);
+    try {
+      const res = await apiFetch('/api/user/health');
+      if (res.ok) {
+        const data = await res.json();
+        setWeightData(data.health);
+      }
+    } catch (e) {
+      console.error("Error loading health data:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateWeight() {
+    if (!weight) return;
+    try {
+      const res = await apiFetch('/api/user/weight', {
+        method: 'POST',
+        body: JSON.stringify({ weight: Number(weight) }),
+      });
+      if (res.ok) {
+        Alert.alert("Success", "Weight updated successfully!");
+        setWeight("");
+        await loadHealthData();
+      }
+    } catch (e) {
+      Alert.alert("Error", "Could not update weight.");
+    }
+  }
+
+  async function sendMessage() {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: 'user', content: chatInput };
+    setMessages(prev => [...prev, userMsg]);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      const res = await apiFetch('/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: userMsg.content }),
+      });
+      const data = await res.json();
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I am having trouble connecting. Please try again.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#0d9488" />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <ScrollView className="p-4 space-y-6">
+        <View className="mb-6">
+          <Text className="text-2xl font-bold text-slate-900">Health Hub</Text>
+          <Text className="text-sm text-slate-500">Track your progress and get medical AI support</Text>
+        </View>
+
+        {/* Weight Tracking Section */}
+        <View className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <View className="flex-row items-center gap-2 mb-4">
+            <Scale size={20} color="#0d9488" />
+            <Text className="text-lg font-bold text-slate-900">Weight Tracker</Text>
+          </View>
+
+          <View className="flex-row gap-2 mb-6">
+            <TextInput
+              value={weight}
+              onChangeText={setWeight}
+              placeholder="Enter weight (kg)"
+              keyboardType="numeric"
+              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-base"
+            />
+            <TouchableOpacity
+              onPress={updateWeight}
+              className="bg-teal-600 px-4 py-2 rounded-lg"
+            >
+              <Text className="text-white font-semibold">Update</Text>
+            </TouchableOpacity>
+          </View>
+
+          {weightData?.logs && weightData.logs.length > 1 && (
+            <LineChart
+              data={{
+                labels: weightData.logs.map((l: any) => l.date).slice(-5),
+                datasets: [{ data: weightData.logs.map((l: any) => l.weight).slice(-5) }]
+              }}
+              width={screenWidth - 48}
+              height={220}
+              chartConfig={{
+                backgroundColor: "#ffffff",
+                backgroundGradientFrom: "#ffffff",
+                backgroundGradientTo: "#ffffff",
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(13, 148, 136, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                style: { borderRadius: 16 },
+                propsForDots: { r: "6", strokeWidth: "2", stroke: "#0d9488" }
+              }}
+              bezier
+              style={{ marginVertical: 8, borderRadius: 16 }}
+            />
+          )}
+        </View>
+
+        {/* AI Chat Section */}
+        <View className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <View className="bg-teal-600 p-4 flex-row items-center gap-2">
+            <MessageSquare size={20} color="white" />
+            <Text className="text-white font-bold">Medical AI Chatbot</Text>
+          </View>
+
+          <ScrollView className="h-80 p-4 space-y-4">
+            {messages.map((m, i) => (
+              <View key={i} className={`flex-row ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <View className={`max-w-[80%] p-3 rounded-2xl ${m.role === 'user' ? 'bg-teal-600 rounded-tr-none' : 'bg-slate-100 rounded-tl-none'}`}>
+                  <Text className={`${m.role === 'user' ? 'text-white' : 'text-slate-800'} text-sm`}>
+                    {m.content}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            {chatLoading && (
+              <View className="flex-row justify-start">
+                <ActivityIndicator size="small" color="#0d9488" />
+              </View>
+            )}
+          </ScrollView>
+
+          <View className="p-4 border-t border-slate-100 flex-row gap-2 bg-slate-50">
+            <TextInput
+              value={chatInput}
+              onChangeText={setChatInput}
+              placeholder="Ask about nutrition or health..."
+              className="flex-1 rounded-full border border-slate-300 px-4 py-2 bg-white text-base"
+            />
+            <TouchableOpacity
+              onPress={sendMessage}
+              disabled={chatLoading}
+              className="bg-teal-600 p-2 rounded-full"
+            >
+              <Send size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Disclaimer */}
+        <View className="bg-amber-50 rounded-xl p-4 border border-amber-200 flex-row gap-3">
+          <Info size={20} color="#b45309" />
+          <Text className="text-xs text-amber-800 leading-relaxed">
+            <Text className="font-bold">Medical Disclaimer:</Text> This app is a planning tool, not a medical device. Always consult your doctor before making significant dietary changes or adjusting medication.
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
