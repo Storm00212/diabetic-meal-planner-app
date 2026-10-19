@@ -1,0 +1,59 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalDependencies": [".env", ".env.local"],
+  "globalEnv": [
+    "NODE_ENV",
+    "JWT_SECRET",
+    "DATABASE_URL",
+    "DIRECT_DATABASE_URL",
+    "CORS_ORIGINS",
+    "LOG_LEVEL",
+    "SVC_AUTH_URL",
+    "SVC_CATALOG_URL",
+    "SVC_PLANNER_URL",
+    "SVC_HEALTH_URL",
+    "GATEWAY_URL",
+    "VITE_API_URL",
+    "VITE_DEBUG_API",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_DEBUG"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**", ".expo/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:push": {
+      "cache": false,
+      "dependsOn": ["db:generate"]
+    },
+    "db:seed": {
+      "cache": false,
+      "dependsOn": ["db:generate"]
+    }
+  }
+}

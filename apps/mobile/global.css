@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * The mobile client's Tailwind entry point.
+ *
+ * NativeWind reads this file and turns the utility classes into React
+ * Native styles at build time. The mobile app uses Tailwind 3 (the version
+ * NativeWind supports); the web app uses Tailwind 4.
+ */

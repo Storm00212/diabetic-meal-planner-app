@@ -1,0 +1,98 @@
+// GlucoPlate — auth service database.
+//
+// This service owns the User aggregate: the account, its clinical limits and
+// its budget settings. No other service may write to this database.
+//
+//   DATABASE_URL       pooled connection used at runtime
+//   DIRECT_DATABASE_URL direct connection used by `prisma db push` and seeds
+//
+// Both point at the same database. They are separate variables because
+// hosted Postgres providers such as Neon expose a pooled endpoint for the
+// application and a direct endpoint for schema operations.
+
+generator client {
+  provider = "prisma-client-js"
+  // Each service generates its client into its own folder. Without this, two
+  // services would overwrite each other's models in node_modules/.prisma.
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("user")
+
+  // Persona
+  setting        String @default("working_class")
+  diabetesLevel String @default("healthy")
+  diabetesType  String @default("none")
+  region        String @default("")
+
+  // Clinical limits
+  dailyCarbTarget    Int @default(200)
+  dailyGiLimit       Int @default(55)
+  dailyCalorieLimit  Int @default(2200)
+
+  // Budget (KES)
+  dailyBudget    Float  @default(300)
+  budgetAmount   Float  @default(300)
+  budgetPeriod   String @default("daily")
+  budgetCurrency String @default("KES")
+  paydayDate     DateTime?
+
+  // Premium
+  isPremium    Boolean   @default(false)
+  premiumPlan  String    @default("premium")
+  premiumSince DateTime?
+
+  // Safety
+  needsClinicianReview Boolean @default(false)
+  allergies            String  @default("")
+  dislikes             String  @default("")
+
+  // Biometrics
+  age           Int?
+  heightCm      Float?
+  currentWeight Float?
+  targetWeight  Float?
+
+  lastLoginAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now())
+
+  payments Payment[]
+}
+
+model Payment {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  provider  String  @default("mpesa")
+  amount    Float   @default(20)
+  currency  String  @default("KES")
+  phoneNumber String
+
+  planTier String @default("premium")
+  status   String @default("initiated")
+
+  checkoutRequestId  String? @unique
+  merchantRequestId  String?
+  mpesaReceiptCode   String?
+  resultCode         Int?
+  resultDescription  String?
+
+  initiatedAt DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "GlucoPlate",
+    "slug": "glucoplate",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "glucoplate",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0d9488"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.glucoplate.mobile"
+    },
+    "android": {
+      "package": "app.glucoplate.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d9488"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

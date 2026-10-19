@@ -1,0 +1,29 @@
+{
+  "name": "@glucoplate/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared TypeScript, ESLint and environment configuration for every workspace",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint.base.json": "./eslint.base.json"
+  },
+  "files": ["dist", "tsconfig.base.json", "eslint.base.json"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "lint": "echo \"@glucoplate/config has nothing to lint\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}

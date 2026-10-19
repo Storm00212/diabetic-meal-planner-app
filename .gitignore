@@ -1,4 +1,21 @@
 node_modules/
 .expo/
-.env*
-package-lock.json
+.next/
+out/
+.turbo/
+# Local embedded Postgres data (npm run db:local)
+.pgdata/
+
+# Secrets — never commit these. Keep .env.example tracked.
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# package-lock.json is intentionally tracked so that Render builds are
+# reproducible.
+tsconfig.tsbuildinfo
+
+# Prisma clients generated per service
+apps/*/generated/
+

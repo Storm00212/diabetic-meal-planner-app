@@ -1,0 +1,49 @@
+{
+  "name": "@glucoplate/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "description": "GlucoPlate mobile client — an Expo app that talks to the same gateway as the web app",
+  "scripts": {
+    "dev": "cross-env EXPO_ROUTER_APP_ROOT=app expo start",
+    "start": "cross-env EXPO_ROUTER_APP_ROOT=app expo start",
+    "android": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --android",
+    "ios": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --ios",
+    "web": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --web",
+    "build": "expo export --platform web",
+    "lint": "eslint app src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "node -e \"require('fs').rmSync('.expo',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~57.0.17",
+    "@glucoplate/api-client": "0.1.0",
+    "@glucoplate/domain": "0.1.0",
+    "@glucoplate/types": "0.1.0",
+    "@glucoplate/ui": "0.1.0",
+    "@react-native-picker/picker": "^2.11.4",
+    "expo": "~57.0.30",
+    "expo-router": "~57.0.28",
+    "expo-secure-store": "^57.0.4",
+    "lucide-react-native": "^1.51.0",
+    "nativewind": "^4.2.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-chart-kit": "^7.0.4",
+    "react-native-confetti-cannon": "^1.5.2",
+    "react-native-css-interop": "^0.2.7",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.4",
+    "tailwindcss": "^3.4.19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "cross-env": "^10.0.0",
+    "typescript": "^5.7.3"
+  }
+}

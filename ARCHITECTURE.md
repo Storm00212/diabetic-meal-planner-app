@@ -7,6 +7,44 @@
 > **Status:** Architecture documentation only. The proposed design below is not yet implemented and this document does not authorize code or database changes.
 >
 > **Review date:** 2026-10-09
+>
+> **Update:** 2026-10-20 — Session 1 (backend foundation) implemented. See
+> §0 below for what this document's findings led to.
+
+---
+
+## 0. Session 1 status: findings from this audit that are now resolved
+
+This document was written as a pre-implementation audit. Session 1 addressed
+the structural and identity problems it identified. The rest of the document
+is still accurate as a description of the *intended* target architecture.
+
+| Audit finding (§9) | Session 1 outcome |
+|---|---|
+| **2. Resolve route discovery** — Next.js did not see `src/app_web`; Expo owned the root `app/` | **Fixed.** Expo Router moved to `src/expo-app` (`EXPO_ROUTER_APP_ROOT=src/expo-app`); Next.js now owns `src/app`. All 29 routes build and serve. The `middleware` convention was also migrated to Next 16's `src/proxy.ts`. |
+| **3. Choose an authentication contract** — hard-coded mock user, cookie-only, mobile had no token | **Fixed.** Stateless JWT access tokens (`src/lib/jwt.ts`, `jose`/HS256, 7-day expiry). `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`. The web app mirrors the token into an httpOnly cookie; the Expo app sends `Authorization: Bearer`. Passwords hashed with scrypt and compared in constant time. |
+| **4. Define a stable HTTP contract** — `apiFetch` returned a `Response` while screens treated it as parsed JSON; the chat client sent `message`/expected `content` | **Fixed.** `apiFetch` returns a `Response`; `apiJson` returns parsed JSON. The chat endpoint now accepts `query` and returns `answer`. `/api/health` reports real database state instead of pretending. |
+| **5. Make identity and ownership consistent** | **Partially fixed.** Every protected route resolves the caller through `getCurrentUser()`. Ownership checks remain per-route and still need the repository-boundary treatment described in §6.4. |
+| **7. Define plan-history semantics** — editing or deleting a dish rewrote history | **Fixed.** `meal_plan_items` now snapshots `dish_name`, `planned_cost`, `carbs_g`, `calories` and `glycemic_index` at plan time. Analytics read the snapshot. |
+| **8. Separate demo mode from normal operation** — GET routes returned another person's sample data | **Fixed.** `/api/plans` returns an empty list for a new account; mock data is only returned when the database itself is unreachable. |
+| **9. Reproducible tooling** — no lockfile, NativeWind missing | **Fixed.** The lockfile is tracked, `nativewind` and its Tailwind v4 peer are installed, `drizzle-kit` and `eslint` are installed, and `.npmrc` sets `include=dev` so `NODE_ENV=production` shells do not prune devDependencies. |
+
+### Additions Session 1 made that this document did not anticipate
+
+- **Payments table** — `payments` (M-Pesa STK push fields) added to the schema
+  ahead of the Session 5 integration.
+- **Diabetes severity ladder** — `users.diabetes_level`
+  (`healthy` → `prediabetes` → `type2_controlled` → `type2_high_risk` →
+  `critical`) with per-level carbohydrate and glycemic index ceilings, plus
+  `needs_clinician_review`.
+- **Shared Kenyan dish catalogue** — 42 dishes with `user_id = NULL` are
+  visible to every account; user-added dishes are private. This is what lets
+  the five personas differ without duplicating data.
+- **Budget semantics** — `budget_amount` is the total for `budget_period`;
+  the planner's daily allowance is derived from it (`src/lib/budget.ts`).
+- **Cost discipline** — currency is KES everywhere.
+
+---
 
 ## 1. Executive overview
 

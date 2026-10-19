@@ -1,0 +1,31 @@
+{
+  "name": "@glucoplate/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Seed fixtures: the shared Kenyan dish catalogue and the demo personas",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./kenyan-dishes.json": "./src/kenyan-dishes.json",
+    "./personas.json": "./src/personas.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').cpSync('src','dist',{recursive:true})\"",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "lint": "echo \"@glucoplate/data has nothing to lint\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
