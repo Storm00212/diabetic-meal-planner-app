@@ -6,13 +6,23 @@ import { dishService } from "./dish.service.js";
 /**
  * The dish catalogue.
  *
- * - GET    /api/dishes        the shared catalogue plus the caller's dishes
- * - POST   /api/dishes        add a dish of the caller's own
- * - GET    /api/dishes/stats  totals and averages over the visible dishes
- * - PATCH  /api/dishes/:id    update a dish the caller owns
- * - DELETE /api/dishes/:id    delete a dish the caller owns
+ * - GET    /api/dishes           the shared catalogue plus the caller's dishes
+ * - POST   /api/dishes           add a dish of the caller's own
+ * - GET    /api/dishes/stats     totals and averages over the visible dishes
+ * - GET    /api/dishes/:id/swap  cheaper, lower-GI alternatives for a dish
+ * - PATCH  /api/dishes/:id       update a dish the caller owns
+ * - DELETE /api/dishes/:id       delete a dish the caller owns
  */
 export const dishRouter = Router();
+
+/** How many alternatives a swap returns when the caller says nothing. */
+const DEFAULT_SWAP_LIMIT = 3;
+
+/** The smallest number of alternatives a swap may return. */
+const MIN_SWAP_LIMIT = 1;
+
+/** The largest number of alternatives a swap may return. */
+const MAX_SWAP_LIMIT = 5;
 
 /** Reads the `:id` path parameter. A bad id is simply not found. */
 function dishId(raw: string | undefined): number {
@@ -21,6 +31,25 @@ function dishId(raw: string | undefined): number {
     throw ApiError.notFound("Dish not found.");
   }
   return id;
+}
+
+/** Reads the `limit` query parameter, clamped to 1–5. */
+function swapLimit(raw: unknown): number {
+  const value = Number(Array.isArray(raw) ? raw[0] : raw);
+  if (!Number.isFinite(value)) return DEFAULT_SWAP_LIMIT;
+  return Math.min(MAX_SWAP_LIMIT, Math.max(MIN_SWAP_LIMIT, Math.round(value)));
+}
+
+/**
+ * Reads the `exclude` query parameter: a comma-separated list of dish names
+ * the caller must not be served (their allergies and dislikes).
+ */
+function excludeNames(raw: unknown): string[] {
+  const value = Array.isArray(raw) ? raw.join(",") : String(raw ?? "");
+  return value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
 }
 
 dishRouter.get(
@@ -48,6 +77,18 @@ dishRouter.get(
   asyncHandler(async (req, res) => {
     const stats = await dishService.statsFor(callerId(req));
     res.json(stats);
+  }),
+);
+
+dishRouter.get(
+  "/api/dishes/:id/swap",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const swap = await dishService.swapFor(callerId(req), dishId(req.params.id), {
+      limit: swapLimit(req.query.limit),
+      excludeNames: excludeNames(req.query.exclude),
+    });
+    res.json(swap);
   }),
 );
 

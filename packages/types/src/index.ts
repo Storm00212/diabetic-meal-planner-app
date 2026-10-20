@@ -96,6 +96,10 @@ export type PublicUser = {
   heightCm: number | null;
   currentWeight: number | null;
   targetWeight: number | null;
+  /** Used by the portion calculator. */
+  sex: Sex;
+  /** Used by the portion calculator. */
+  activityLevel: ActivityLevel;
   createdAt: string;
 };
 
@@ -308,6 +312,12 @@ export type GeneratePlanRequest = {
   budget?: number;
   carbTarget?: number;
   giLimit?: number;
+  /**
+   * The dishes the person swapped in, keyed by slot. The planner only
+   * honours a swap that is within the glycemic index limit and is not
+   * already in another slot.
+   */
+  overrides?: Partial<Record<MealSlot, number>>;
 };
 
 export type GeneratePlanResponse = {

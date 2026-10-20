@@ -1,8 +1,19 @@
 import { randomBytes, scryptSync } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/index.js";
 import { PERSONAS } from "@glucoplate/data";
 
 const prisma = new PrismaClient();
+
+/**
+ * A persona as it sits in `personas.json`.
+ *
+ * The activity fields the portion calculator reads are optional, so a fixture
+ * that does not name them still seeds.
+ */
+type PersonaFixture = (typeof PERSONAS)[number] & {
+  sex?: string;
+  activityLevel?: string;
+};
 
 /** Same format as `hashPassword` in src/modules/auth/auth.service.ts. */
 function hashPassword(password: string): string {
@@ -19,7 +30,7 @@ function hashPassword(password: string): string {
 async function main() {
   console.log("Seeding svc-auth …");
 
-  for (const persona of PERSONAS) {
+  for (const persona of PERSONAS as PersonaFixture[]) {
     const data = {
       name: persona.name,
       passwordHash: hashPassword(persona.password),
@@ -42,6 +53,8 @@ async function main() {
       heightCm: persona.heightCm,
       currentWeight: persona.currentWeight,
       targetWeight: persona.targetWeight,
+      sex: persona.sex ?? "unspecified",
+      activityLevel: persona.activityLevel ?? "light",
       updatedAt: new Date(),
     };
 
@@ -56,7 +69,7 @@ async function main() {
     });
 
     console.log(
-      `  ✓ ${persona.email.padEnd(28)} ${persona.password.padEnd(12)} (${persona.setting} / ${persona.diabetesLevel})`,
+      `  ✓ ${persona.email.padEnd(28)} ${persona.password.padEnd(12)} (${persona.setting} / ${persona.diabetesLevel} / ${data.sex} / ${data.activityLevel})`,
     );
   }
 

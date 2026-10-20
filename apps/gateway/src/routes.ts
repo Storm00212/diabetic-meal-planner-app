@@ -33,6 +33,7 @@ export const ROUTE_TABLE: RouteRule[] = [
   { path: "/api/auth", upstream: "auth" },
   { path: "/api/user/profile", upstream: "auth" },
   { path: "/api/user/budget", upstream: "auth" },
+  { path: "/api/user/portion-targets", upstream: "auth" },
   { path: "/api/settings", upstream: "auth" },
   { path: "/api/dishes", upstream: "catalog" },
   { path: "/api/plans", upstream: "planner" },

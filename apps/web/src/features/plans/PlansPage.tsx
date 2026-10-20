@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/app/api";
 import { money, formatDate } from "@glucoplate/domain";
 import { giBand } from "@glucoplate/domain";
-import type { MealPlanWithItems } from "@glucoplate/types";
+import type { MealPlanItem, MealPlanWithItems } from "@glucoplate/types";
 import { Link } from "react-router-dom";
 
 const SLOT_META: Record<string, { label: string; icon: string }> = {
@@ -13,6 +13,17 @@ const SLOT_META: Record<string, { label: string; icon: string }> = {
   evening: { label: "Evening", icon: "🌙" },
 };
 const SLOT_ORDER = ["morning", "afternoon", "evening"];
+
+/**
+ * Why a saved dish was chosen, when the planner recorded one.
+ *
+ * The shared `MealPlanItem` contract does not declare the field, so it is
+ * read defensively and only shown when it is a non-empty string.
+ */
+function reasonFor(item: MealPlanItem): string | null {
+  const reason = (item as { reason?: string }).reason;
+  return typeof reason === "string" && reason.trim() ? reason : null;
+}
 
 export function PlansPage() {
   const [plans, setPlans] = useState<MealPlanWithItems[]>([]);
@@ -176,6 +187,7 @@ export function PlansPage() {
                   {SLOT_ORDER.map((slot) => {
                     const item = plan.items.find((i) => i.slot === slot);
                     const meta = SLOT_META[slot];
+                    const reason = item ? reasonFor(item) : null;
                     return (
                       <div
                         key={slot}
@@ -189,6 +201,11 @@ export function PlansPage() {
                             <p className="mt-1 font-medium text-slate-800">
                               {item.dishName}
                             </p>
+                            {reason && (
+                              <p className="mt-1 text-xs text-slate-500">
+                                {reason}
+                              </p>
+                            )}
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
                               <span
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${giBand(item.glycemicIndex).badge}`}

@@ -12,7 +12,7 @@ Total time: about 30 minutes if you already have a GitHub account.
 | Monorepo | Turborepo: 2 frontends, 1 gateway, 4 services, 6 shared packages |
 | Databases | One per service (database-per-service), Prisma |
 | Auth | Stateless JWT, verified by every service, shared `JWT_SECRET` |
-| Kenyan data | 42 dishes with KSh prices, carbs, GI, calories |
+| Kenyan data | 95 dishes across 14 counties, with KSh prices, carbs, GI, calories |
 | Personas | 5 demo users + 1 generic demo account, all with different plans |
 | Planner | Carb-target and GI-limit aware — the 5 personas get 5 different plans |
 | Safety | "Planning aid, not medical advice" everywhere + a clinician banner for the critical persona |
@@ -163,14 +163,20 @@ npm run smoke
 ```
 
 Expected: **`All checks passed.`** (45 checks: every service's health, the
-gateway routing table, register/login/me, the 42-dish catalogue, the five
+gateway routing table, register/login/me, the 95-dish catalogue, the five
 personas' plans, the clinician banner, CORS and request tracing).
 
 ```bash
 npm run lint        # must print nothing
 npm run typecheck   # must print nothing
 npm run build       # must succeed
+npm run test        # the domain tests
+npm run smoke       # the cross-service flow
+npm run audit       # every endpoint, directly and through the gateway
+npm run test:swap   # the swap-and-save flow
 ```
+
+All of them except the first three need the stack running.
 
 ## 7. Demo script for the judges
 
@@ -190,12 +196,22 @@ password `Gluco@2026`.**
 
 **The best 30 seconds of the demo:** sign in as `njeri@` and open the Meal
 Planner. Note the plan and the total. Then sign in as `josephine@` — the same
-42-dish catalogue, a completely different plan, a tighter budget, a tighter GI
+95-dish catalogue, a completely different plan, a tighter budget, a tighter GI
 ceiling, and a red **"Talk to your clinician first"** banner at the top of the
 screen. That is the whole product thesis.
 
 Other things to try:
-- **My Bucket** — all 42 Kenyan dishes with KSh prices and GI badges.
+- **Meal Planner → "Why this dish"** — every meal line explains itself in
+  your own numbers: "KSh 70 — 35% of your KSh 200 daily budget, leaving
+  KSh 130", "Glycemic index 55 sits right at your limit of 55". This is the
+  single most persuasive screen in the app.
+- **Swap** — press "Swap" on any meal and GlucoPlate finds a cheaper, lower-
+  glycemic-index alternative from the same catalogue.
+- **My Bucket** — 95 Kenyan dishes across 14 counties, with KSh prices,
+  serving sizes and GI badges.
+- **Settings → Your portion profile** — enter your height, weight, age and
+  activity level and GlucoPlate works out your daily calories, carbohydrate,
+  protein and fat targets from the Mifflin-St Jeor equation.
 - **Analytics** — carb trends and the GI distribution of what you actually ate.
 - Register a brand-new account on the spot — it gets the shared catalogue and
   its own default limits.
@@ -397,7 +413,7 @@ Reply with one short message containing:
 | `apps/svc-*/src/modules/` | that service's feature modules |
 | `packages/types/src/index.ts` | the API contract and `SERVICE_PORTS` |
 | `packages/domain/src/index.ts` | the planner, budget rules and safety copy |
-| `packages/data/src/` | the 42 dishes and the 5 personas |
+| `packages/data/src/` | the 95 dishes and the 5 personas |
 | `packages/api-client/src/` | the typed clients and the request tracing |
 | `scripts/local-postgres.mjs` | the four local databases |
 | `scripts/sync-env.mjs` | fans `.env.local` out to every workspace |

@@ -25,6 +25,8 @@ export type SeedDish = {
   fatG: number;
   fiberG: number;
   glycemicIndex: number;
+  /** What one serving actually is, e.g. "1 chapati (60 g)". */
+  servingLabel: string;
   region: string;
   isPantryItem: boolean;
 };
@@ -62,11 +64,29 @@ function readJson<T>(fileName: string): T {
   return JSON.parse(readFileSync(join(dataDir, fileName), "utf8")) as T;
 }
 
-/** The 42 shared Kenyan dishes every account can plan with. */
+/** The shared Kenyan dishes every account can plan with. */
 export const KENYAN_DISHES = readJson<SeedDish[]>("kenyan-dishes.json");
 
-/** The five demo personas plus the generic demo account. */
+/** The demo personas plus the generic demo account. */
 export const PERSONAS = readJson<SeedPersona[]>("personas.json");
+
+/** The counties the catalogue covers. */
+export const REGIONS = [
+  "Luo",
+  "Kikuyu",
+  "Luhya",
+  "Swahili",
+  "Kalenjin",
+  "Maasai",
+  "Meru",
+  "Embu",
+  "Nyeri",
+  "Turkana",
+  "Kisii",
+  "Coastal",
+  "Western",
+  "Modern",
+] as const;
 
 export const DEMO_CREDENTIALS = {
   email: "demo@glucoplate.app",

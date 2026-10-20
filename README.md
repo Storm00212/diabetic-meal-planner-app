@@ -6,7 +6,7 @@ the fact that it is a **planning aid, not medical advice**.
 
 ## 🌟 Overview
 
-GlucoPlate builds a day's meals from a shared catalogue of 42 Kenyan dishes,
+GlucoPlate builds a day's meals from a shared catalogue of 95 Kenyan dishes,
 respecting each person's carbohydrate ceiling, glycemic index limit and
 daily budget in Kenyan shillings. The same catalogue produces a different
 plan for every persona — a university student, a primary school child, a
@@ -31,7 +31,7 @@ apps/
 packages/
 ├── types/        the API contract: DTOs, enums, SERVICE_PORTS
 ├── domain/       pure business rules: planner, budget, safety copy
-├── data/         seed fixtures: the 42 dishes, the 5 personas
+├── data/         seed fixtures: the 95 dishes, the 5 personas
 ├── api-client/   typed HTTP clients + request tracing
 ├── ui/           design tokens shared by web and mobile
 └── config/       shared tsconfig and env helpers
@@ -52,10 +52,16 @@ new service.
 
 - **Persona-aware planner** — carbohydrate target, GI ceiling, budget and
   allergies/dislikes all change the result (`packages/domain`).
-- **Kenyan dish catalogue** — 42 dishes with KSh prices, carbs, protein,
-  fibre and GI (`packages/data`).
+- **Kenyan dish catalogue** — 95 dishes across 14 counties, with KSh prices,
+  carbs, protein, fibre, GI and a serving size for each.
+- **"Why this dish"** — every plan line explains itself in the reader's own
+  numbers: cost against the budget, GI against the limit, carbs against the cap.
+- **Swap** — one tap finds a cheaper, lower-glycemic-index alternative for
+  any dish in a plan.
+- **Portion calculator** — height, weight, age and activity become daily
+  calorie, carbohydrate, protein and fat targets.
 - **Five demo personas** — healthy → critical, across student, child,
-  working-class, elderly and rural-farmer settings.
+  working-class, elderly and rural-farmer settings. All five get a different plan.
 - **Safety first** — a "planning aid, not medical advice" notice everywhere,
   and a red *talk to your clinician* banner for the critical and high-risk
   personas.
@@ -106,11 +112,15 @@ demo script: **[docs/SESSION-1-SETUP.md](docs/SESSION-1-SETUP.md)**
 npm run lint       # eslint, every workspace
 npm run typecheck  # tsc, every workspace
 npm run build      # every workspace
+npm run test       # the domain tests
 npm run smoke      # cross-service end-to-end test against a running stack
+npm run audit      # every endpoint, directly and through the gateway
 ```
 
 `npm run smoke` talks to the gateway the way the clients do, and to every
 service directly, so it proves the whole system is wired together.
+`npm run audit` exercises all 30 routes — that they exist, that they enforce
+auth, and that they return the documented shape.
 
 ## ⚖️ Medical Disclaimer
 

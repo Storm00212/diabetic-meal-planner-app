@@ -111,6 +111,13 @@ export default function DishModal({
     }
   }
 
+  /**
+   * The serving the catalogue recorded for this dish, e.g. "1 chapati (60 g)".
+   * It stands in for the description when the dish has none.
+   */
+  const servingLabel = editing?.servingLabel?.trim() ?? "";
+  const descriptionIsEmpty = values.description.trim() === "";
+
   const numField = (
     label: string,
     key: keyof DishFormValues,
@@ -141,7 +148,9 @@ export default function DishModal({
             {editing ? "Edit dish" : "Add a dish to your bucket"}
           </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
           >
             ✕
@@ -167,10 +176,14 @@ export default function DishModal({
                   disabled={fetchingNutrients}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 disabled:opacity-50 transition"
                   title="Auto-calculate nutrients"
+                  aria-label="Auto-calculate nutrients"
                 >
                   <Sparkles className={`h-4 w-4 ${fetchingNutrients ? "animate-spin" : ""}`} />
                 </button>
               </div>
+              {servingLabel && !descriptionIsEmpty && (
+                <p className="mt-1 text-xs text-slate-400">{servingLabel}</p>
+              )}
             </div>
 
           <div>
@@ -184,6 +197,9 @@ export default function DishModal({
               placeholder="Short note about the dish"
               className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
+            {servingLabel && descriptionIsEmpty && (
+              <p className="mt-1 text-xs text-slate-400">{servingLabel}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -214,10 +230,10 @@ export default function DishModal({
                 className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
               />
               <label htmlFor="isPantryItem" className="text-sm font-medium text-slate-700">
-                Pantry Item (Free)
+                Pantry item (free)
               </label>
             </div>
-            {numField("Cost", "cost", "0.1", "$")}
+            {numField("Cost", "cost", "0.1", "KSh")}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,8 +1,11 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "../../../generated/prisma/index.js";
 import { prisma } from "../../lib/prisma.js";
 
 /** The row type Prisma returns for a user. */
 export type UserRow = Prisma.UserGetPayload<Record<string, never>>;
+
+/** The fields a user update may set. */
+export type UserUpdate = Prisma.UserUpdateInput;
 
 export const authRepository = {
   async findByEmail(email: string): Promise<UserRow | null> {

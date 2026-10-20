@@ -10,8 +10,8 @@
 
 import type { Dish, DiabetesLevel, MealSlot, UserSetting } from "@glucoplate/types";
 
-export * from "./portion";
-export * from "./explain";
+export * from "./portion.js";
+export * from "./explain.js";
 
 // ---------------------------------------------------------------------------
 // Planner
@@ -127,10 +127,17 @@ function scoreCombo(combo: Dish[], slots: MealSlot[], carbTarget: number): Combo
    * Utility of a plan:
    *   - filling the day's carbohydrate allowance is the main goal,
    *   - protein keeps the person full,
+   *   - spending the budget they actually have, so a bigger budget buys a
+   *     more substantial meal rather than the same plate,
    *   - a lower average glycemic index keeps the sugars steadier.
    */
   const utility =
-    Math.min(carbs, carbTarget) + protein * 1.5 - averageGi * 0.5 + slotBonus;
+    Math.min(carbs, carbTarget) * 1 +
+    protein * 1.5 +
+    calories * 0.02 +
+    cost * 0.08 -
+    averageGi * 0.5 +
+    slotBonus;
 
   return {
     dishes: combo,

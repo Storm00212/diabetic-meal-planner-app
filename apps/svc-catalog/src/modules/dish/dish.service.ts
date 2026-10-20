@@ -1,10 +1,19 @@
 import type { Prisma } from "../../../generated/prisma/index.js";
-import type { Dish, DishInput, MealTime } from "@glucoplate/types";
+import { swapCandidates } from "@glucoplate/domain";
+import type {
+  Dish,
+  DishInput,
+  MealTime,
+  SwapCandidate,
+} from "@glucoplate/types";
 import { MEAL_TIMES } from "@glucoplate/types";
 import { ApiError } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
 import { prisma } from "../../lib/prisma.js";
-import { seedCatalogue } from "./dish.catalogue.js";
+import {
+  DEFAULT_SERVING_LABEL,
+  seedCatalogue,
+} from "./dish.catalogue.js";
 import { dishRepository, type DishRow } from "./dish.repository.js";
 
 /** The glycemic index is a 0–100 scale, so it is clamped on every write. */
@@ -14,6 +23,20 @@ const DEFAULT_GI = 50;
 
 /** The `source` carried by a dish a user added themselves. */
 const USER_SOURCE = "user";
+
+/**
+ * The dish body this service accepts.
+ *
+ * `servingLabel` is optional and is not part of the shared `DishInput`
+ * contract, so it is read from the request body defensively.
+ */
+export type DishBody = DishInput & { servingLabel?: string };
+
+/** The alternatives for one dish, plus the dish they replace. */
+export type SwapResult = {
+  dish: { id: number; name: string };
+  alternatives: SwapCandidate[];
+};
 
 /** Turns a database row into the `Dish` shape the API publishes. */
 export function toDish(row: DishRow): Dish {
@@ -31,6 +54,7 @@ export function toDish(row: DishRow): Dish {
     fatG: row.fatG,
     fiberG: row.fiberG,
     glycemicIndex: row.glycemicIndex,
+    servingLabel: row.servingLabel,
     region: row.region,
     isKenyan: row.isKenyan,
     source: row.source,
@@ -64,6 +88,12 @@ function mealTimeOr(value: unknown, fallback: MealTime): MealTime {
   const candidate = String(value ?? "");
   const known = MEAL_TIMES as readonly string[];
   return known.includes(candidate) ? (candidate as MealTime) : fallback;
+}
+
+/** What one serving is called. An empty label falls back to the default. */
+function servingLabelOr(value: unknown): string {
+  const label = String(value ?? "").trim();
+  return label || DEFAULT_SERVING_LABEL;
 }
 
 /** Rounds to a fixed number of decimal places. */
@@ -106,7 +136,7 @@ export const dishService = {
   },
 
   /** Creates a dish owned by the caller. */
-  async createFor(userId: number, input: DishInput): Promise<Dish> {
+  async createFor(userId: number, input: DishBody): Promise<Dish> {
     const name = String(input.name ?? "").trim();
     if (!name) {
       throw ApiError.badRequest("A dish name is required.");
@@ -126,6 +156,7 @@ export const dishService = {
       fatG: nonNegativeInt(input.fatG, 0),
       fiberG: nonNegativeInt(input.fiberG, 0),
       glycemicIndex: clampGi(input.glycemicIndex, DEFAULT_GI),
+      servingLabel: servingLabelOr(input.servingLabel),
       region: input.region === undefined ? undefined : String(input.region),
       isKenyan: false,
       source: USER_SOURCE,
@@ -140,7 +171,7 @@ export const dishService = {
    * A catalogue dish is not the caller's to change, so it is a 404 — the
    * same answer as a dish that does not exist.
    */
-  async updateFor(userId: number, id: number, input: DishInput): Promise<Dish> {
+  async updateFor(userId: number, id: number, input: DishBody): Promise<Dish> {
     const data: Prisma.DishUpdateManyMutationInput = {};
 
     if (input.name !== undefined) {
@@ -180,6 +211,9 @@ export const dishService = {
     if (input.glycemicIndex !== undefined) {
       data.glycemicIndex = clampGi(input.glycemicIndex, DEFAULT_GI);
     }
+    if (input.servingLabel !== undefined) {
+      data.servingLabel = servingLabelOr(input.servingLabel);
+    }
     if (input.region !== undefined) {
       data.region = String(input.region);
     }
@@ -217,6 +251,42 @@ export const dishService = {
       total: stats.total,
       avgCost: round(stats.avgCost, 2),
       avgGi: round(stats.avgGi, 1),
+    };
+  },
+
+  /**
+   * Cheaper, lower-glycemic-index alternatives for one dish.
+   *
+   * The catalogue is the shared Kenyan catalogue plus the caller's own
+   * dishes — the same set `GET /api/dishes` returns. The swap rules live in
+   * `@glucoplate/domain`, so this service never re-implements them: it only
+   * supplies the dish, the catalogue and the caller's exclusions.
+   *
+   * A dish the caller cannot see is a 404, exactly like a dish that does
+   * not exist.
+   */
+  async swapFor(
+    userId: number,
+    id: number,
+    options: { limit: number; excludeNames: string[] },
+  ): Promise<SwapResult> {
+    await ensureCatalogue();
+
+    const catalogue = (await dishRepository.findVisibleTo(userId)).map(toDish);
+
+    const dish = catalogue.find((entry) => entry.id === id);
+    if (!dish) {
+      throw ApiError.notFound("Dish not found.");
+    }
+
+    const alternatives = swapCandidates(dish, catalogue, {
+      limit: options.limit,
+      excludeNames: options.excludeNames,
+    });
+
+    return {
+      dish: { id: dish.id, name: dish.name },
+      alternatives,
     };
   },
 };

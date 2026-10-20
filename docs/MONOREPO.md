@@ -119,7 +119,7 @@ glucoplate/
 ├── packages/                    # ── shared, versioned, reusable ──
 │   ├── types/                   # the API contract: DTOs, enums, SERVICE_PORTS
 │   ├── domain/                  # pure business rules: planner, budget, safety copy
-│   ├── data/                    # seed fixtures: the 42 dishes, the 5 personas
+│   ├── data/                    # seed fixtures: the 95 dishes, the 5 personas
 │   ├── api-client/              # typed HTTP clients + request tracing
 │   ├── ui/                      # design tokens shared by web and mobile
 │   └── config/                  # tsconfig.base.json, shared env helpers
@@ -319,6 +319,8 @@ is unreachable — so "up" and "up but broken" are different answers.
 
     // ── the end-to-end test ───────────────────────────────────────────
     "smoke":           "node scripts/smoke.mjs",
+    "audit":           "node scripts/audit-endpoints.mjs",
+    "test:swap":       "node scripts/test-swap.mjs",
 
     // ── one-shot setup ────────────────────────────────────────────────
     "setup":           "npm install && npm run env:sync && npm run db:generate && npm run db:push && npm run db:seed"
@@ -342,7 +344,7 @@ is unreachable — so "up" and "up but broken" are different answers.
 npm run db:local      # terminal 1 — four Postgres instances, one per service
 npm run env:sync      # terminal 2 — writes each service's .env
 npm run db:push       # terminal 2 — creates the four schemas
-npm run db:seed       # terminal 2 — 42 dishes, 6 accounts, 12 sample plans
+npm run db:seed       # terminal 2 — 95 dishes, 6 accounts, 12 sample plans
 npm run dev           # terminal 2 — the gateway, the four services, the web app
 ```
 

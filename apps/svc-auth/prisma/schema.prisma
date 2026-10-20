@@ -64,6 +64,10 @@ model User {
   currentWeight Float?
   targetWeight  Float?
 
+  // The physical details the portion calculator needs.
+  sex           String @default("unspecified")
+  activityLevel String @default("light")
+
   lastLoginAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now())

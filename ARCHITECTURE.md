@@ -49,7 +49,7 @@ target architecture, and the target is now the **Turborepo monorepo** in
   (`healthy` → `prediabetes` → `type2_controlled` → `type2_high_risk` →
   `critical`) with per-level carbohydrate and glycemic index ceilings, plus
   `needs_clinician_review`.
-- **Shared Kenyan dish catalogue** — 42 dishes with `user_id = NULL` are
+- **Shared Kenyan dish catalogue** — 95 dishes with `user_id = NULL` are
   visible to every account; user-added dishes are private. This is what lets
   the five personas differ without duplicating data.
 - **Budget semantics** — `budget_amount` is the total for `budget_period`;

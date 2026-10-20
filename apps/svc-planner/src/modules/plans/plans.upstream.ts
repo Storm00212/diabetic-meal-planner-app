@@ -1,12 +1,14 @@
 import type {
+  ActivityLevel,
   BudgetPeriod,
   Dish,
   MealTime,
   PublicUser,
+  Sex,
   UserRole,
   UserSetting,
 } from "@glucoplate/types";
-import { MEAL_TIMES } from "@glucoplate/types";
+import { ACTIVITY_LEVELS, MEAL_TIMES, SEXES } from "@glucoplate/types";
 import { config } from "../../config.js";
 import { ApiError } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
@@ -99,6 +101,21 @@ function toNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+/**
+ * Reads a value that has to be one of a fixed set of words.
+ *
+ * Another service owns these fields, so an unknown word falls back to the
+ * safe default rather than reaching the planner as a surprise.
+ */
+function toEnum<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  const text = String(value ?? "").trim().toLowerCase();
+  return (allowed as readonly string[]).includes(text) ? (text as T) : fallback;
+}
+
 /** Normalises a timestamp into an ISO string. */
 function toIsoString(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
@@ -171,6 +188,8 @@ export function toContractDish(raw: unknown): Dish {
     fatG: Math.round(toNumber(source.fatG)),
     fiberG: Math.round(toNumber(source.fiberG)),
     glycemicIndex: Math.round(toNumber(source.glycemicIndex)),
+    /** What one serving is, e.g. "1 chapati (60 g)". */
+    servingLabel: String(source.servingLabel ?? ""),
     region: String(source.region ?? "Kenya"),
     isKenyan: source.isKenyan === undefined ? true : Boolean(source.isKenyan),
     source: String(source.source ?? "catalogue"),
@@ -224,6 +243,14 @@ export function toContractUser(raw: unknown, fallbackId: number): PublicUser {
       source.targetWeight === null || source.targetWeight === undefined
         ? null
         : toNumber(source.targetWeight),
+    /** Used by the portion calculator. */
+    sex: toEnum(source.sex, SEXES, "unspecified") as Sex,
+    /** Used by the portion calculator. */
+    activityLevel: toEnum(
+      source.activityLevel,
+      ACTIVITY_LEVELS,
+      "sedentary",
+    ) as ActivityLevel,
     createdAt: toIsoString(source.createdAt),
   };
 }

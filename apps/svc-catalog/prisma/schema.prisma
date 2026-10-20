@@ -64,6 +64,9 @@ model Dish {
   // 0 (none) to 100 (glucose), clamped on write.
   glycemicIndex Int @default(50)
 
+  // What one serving actually is, e.g. "1 chapati (60 g)".
+  servingLabel String @default("1 serving")
+
   region   String  @default("Kenya")
   isKenyan Boolean @default(true)
 

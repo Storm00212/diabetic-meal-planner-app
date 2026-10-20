@@ -52,6 +52,8 @@ export const plansRepository = {
       calories: number;
       glycemicIndex: number;
       servings?: number;
+      /** Why the dish was chosen, saved with the item. */
+      reason?: string;
     }[],
   ): Promise<void> {
     if (items.length === 0) return;

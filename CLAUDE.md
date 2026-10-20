@@ -20,7 +20,9 @@ GlucoPlate is a budget-aware, sugar-safe meal planner for people with diabetes i
 - **Auth**: stateless JWT (HS256, `jose`), 7-day expiry, verified by every service with the shared `JWT_SECRET`.
 - **Shared packages**: `@glucoplate/types` (the contract), `@glucoplate/domain` (pure business rules), `@glucoplate/data` (seed fixtures), `@glucoplate/api-client` (typed clients + tracing), `@glucoplate/ui` (design tokens), `@glucoplate/config` (tsconfig + env helpers).
 
-> **Database-per-service means service-to-service HTTP calls.** `svc-planner` fetches the catalogue from `svc-catalog` and the caller's limits from `svc-auth`; `svc-health` fetches plans from `svc-planner`. Each caches the answer for 60 seconds and serves the last cached copy if the upstream is down.
+> **Database-per-service means service-to-service HTTP calls.** `svc-planner` fetches the catalogue from `svc-catalog` and the caller's limits from `svc-auth`; `svc-health` fetches plans from `svc-planner`. Each caches the answer for 60 seconds and serves the last cached copy if the upstream is down. A change to a person's budget is therefore not reflected in a plan for up to a minute — that is the cache, not a bug.
+
+> **Adding an endpoint means touching three places:** the service that owns it, `apps/gateway/src/routes.ts` (the routing table — the gateway answers 404 for a path it does not know), and `packages/types/src/index.ts` (the contract). `npm run audit` catches a missing route.
 
 ## Directory Structure
 - `apps/web/src/`
@@ -37,6 +39,9 @@ GlucoPlate is a budget-aware, sugar-safe meal planner for people with diabetes i
   - `modules/<feature>/` — `<feature>.routes.ts` (HTTP), `<feature>.service.ts` (rules), `<feature>.repository.ts` (SQL).
 - `packages/types/src/index.ts` — DTOs, enums and `SERVICE_PORTS`. **Change the contract here first**; the compiler finds every consumer.
 - `packages/domain/src/index.ts` — `generatePlan`, `dailyAllowance`, `exclusionsFor`, `PLANNING_AID_NOTICE`, `clinicianBannerFor`, `money`.
+- `packages/domain/src/portion.ts` — `portionTargets`, `bmrCalories`, `dailyEnergy`, `portionsForDish`.
+- `packages/domain/src/explain.ts` — `explainDish`, `explainPlan`, `swapCandidates`.
+- `packages/domain/test/domain.test.mjs` — the tests for the numbers. Run with `npm run test --workspace=@glucoplate/domain`.
 
 ## Common Commands
 ### Development
@@ -49,6 +54,12 @@ GlucoPlate is a budget-aware, sugar-safe meal planner for people with diabetes i
 - **Linting**: `npm run lint`
 - **Build**: `npm run build`
 - **End-to-end test**: `npm run smoke` (needs the stack running)
+- **Endpoint audit**: `npm run audit` (every route, directly and through the gateway)
+
+> **Never type-check a service on its own.** `packages/*/dist` is a build
+> artifact, so `npx tsc -p apps/<svc>/tsconfig.json` type-checks against a
+> stale contract and reports a false green. Always use `turbo run typecheck`,
+> which rebuilds the packages first.
 
 ### Database
 - **Local embedded Postgres** (one instance per service): `npm run db:local`. Wipe with `npm run db:local:reset`.

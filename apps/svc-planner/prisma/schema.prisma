@@ -74,6 +74,11 @@ model MealPlanItem {
   calories      Int    @default(0)
   glycemicIndex Int    @default(0)
   actualCost    Float  @default(0)
+  /// Why this dish was chosen, in the user's own numbers — the cost against
+  /// the budget, the glycemic index against the limit, the carbohydrate
+  /// against the allowance. Snapshotted with the plan so a saved plan can
+  /// still explain itself later.
+  reason String @default("")
 
   createdAt DateTime @default(now())
 

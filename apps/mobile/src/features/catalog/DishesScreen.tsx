@@ -97,6 +97,7 @@ export default function DishesScreen() {
         createdAt: new Date().toISOString(),
         fatG: 0,
         fiberG: 0,
+        servingLabel: "1 serving",
         region: "Kenya",
         isKenyan: false,
         source: "user",

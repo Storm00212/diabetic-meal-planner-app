@@ -28,13 +28,21 @@ const SERVICES = [
 ];
 
 const children = [];
+const restarts = new Map();
 
-function start(name, workspace, extraEnv = {}) {
+/**
+ * Starts one service and supervises it.
+ *
+ * If a service dies it is restarted, because a crashed child should not
+ * permanently break the whole stack. The restart is logged so a crash loop
+ * is visible rather than silent.
+ */
+function start(name, cwd, extraEnv = {}) {
   const child = spawn(
     process.execPath,
     [join(root, "node_modules", "tsx", "dist", "cli.mjs"), "src/index.ts"],
     {
-      cwd: join(root, "apps", workspace.replace("@glucoplate/", "")),
+      cwd,
       env: { ...process.env, ...extraEnv },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -51,7 +59,22 @@ function start(name, workspace, extraEnv = {}) {
   child.stderr.on("data", forward(process.stderr));
 
   child.on("exit", (code) => {
-    console.log(`${prefix} exited with code ${code}`);
+    if (shuttingDown) return;
+
+    const count = (restarts.get(name) ?? 0) + 1;
+    restarts.set(name, count);
+
+    if (count > 5) {
+      console.error(
+        `${prefix} exited with code ${code} and has been restarted ${count - 1} times. Giving up.`,
+      );
+      return;
+    }
+
+    console.error(
+      `${prefix} exited with code ${code}. Restarting in 2s (attempt ${count}).`,
+    );
+    setTimeout(() => start(name, cwd, extraEnv), 2000);
   });
 
   children.push(child);
@@ -60,30 +83,19 @@ function start(name, workspace, extraEnv = {}) {
 
 // The domain services first, so the gateway has something to talk to.
 for (const service of SERVICES) {
-  start(service.name, service.workspace);
+  start(
+    service.name,
+    join(root, "apps", service.workspace.replace("@glucoplate/", "")),
+  );
 }
 
 // The gateway last: it binds the public $PORT.
-const gateway = spawn(
-  process.execPath,
-  [join(root, "node_modules", "tsx", "dist", "cli.mjs"), "src/index.ts"],
-  {
-    cwd: join(root, "apps", "gateway"),
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  },
-);
-const forward = (stream) => (chunk) => {
-  for (const line of String(chunk).split("\n")) {
-    if (line.trim()) stream.write(`[gateway] ${line}\n`);
-  }
-};
-gateway.stdout.on("data", forward(process.stdout));
-gateway.stderr.on("data", forward(process.stderr));
-gateway.on("exit", (code) => console.log(`[gateway] exited with code ${code}`));
-children.push(gateway);
+start("gateway", join(root, "apps", "gateway"));
+
+let shuttingDown = false;
 
 function shutdown() {
+  shuttingDown = true;
   for (const child of children) {
     if (!child.killed) child.kill();
   }

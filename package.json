@@ -31,6 +31,8 @@
     "db:local": "node scripts/local-postgres.mjs",
     "db:local:reset": "node scripts/local-postgres.mjs --reset",
     "smoke": "node scripts/smoke.mjs",
+    "audit": "node scripts/audit-endpoints.mjs",
+    "test:swap": "node scripts/test-swap.mjs",
     "setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed",
     "env:sync": "node scripts/sync-env.mjs",
     "start:all": "node scripts/start-all.mjs"

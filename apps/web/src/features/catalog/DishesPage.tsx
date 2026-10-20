@@ -86,6 +86,7 @@ export function DishesPage() {
         region: "Kenya",
         isKenyan: false,
         source: "user",
+        servingLabel: "",
         ...values,
       };
       setDishes((ds) => [optimistic, ...ds]);
@@ -209,7 +210,14 @@ export function DishesPage() {
                 className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-slate-900">{dish.name}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-slate-900">{dish.name}</h3>
+                    {dish.servingLabel && (
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {dish.servingLabel}
+                      </p>
+                    )}
+                  </div>
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                     dish.isPantryItem
                       ? "bg-amber-100 text-amber-700"

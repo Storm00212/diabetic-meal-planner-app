@@ -29,9 +29,11 @@ import type {
   MealPlanItem,
   MealPlanWithItems,
   Payment,
+  PortionTargets,
   PublicUser,
   RegisterRequest,
   ServiceName,
+  SwapCandidate,
   UpdateBudgetRequest,
   UpdatePlanItemRequest,
   UpdateProfileRequest,
@@ -302,6 +304,12 @@ export function createCatalogApi(client: GlucoPlateClient) {
         avgCost: number;
         avgGi: number;
       }>("/api/dishes/stats"),
+    /** Cheaper, lower-glycemic-index alternatives for a dish. */
+    swap: (dishId: number, limit = 3) =>
+      client.request<{
+        dish: { id: number; name: string };
+        alternatives: SwapCandidate[];
+      }>(`/api/dishes/${dishId}/swap?limit=${limit}`),
   };
 }
 
@@ -377,6 +385,19 @@ export function createUserApi(client: GlucoPlateClient) {
         method: "PATCH",
         body,
       }),
+    /** The daily nutrition targets derived from the caller's physical profile. */
+    portionTargets: () =>
+      client.request<
+        PortionTargets & {
+          profile: {
+            age: number | null;
+            sex: string;
+            heightCm: number | null;
+            weightKg: number | null;
+            activityLevel: string;
+          };
+        }
+      >("/api/user/portion-targets"),
   };
 }
 

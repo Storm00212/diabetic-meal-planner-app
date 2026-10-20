@@ -146,7 +146,7 @@ console.log("\nKenyan dish catalogue (svc-catalog)");
 const dishes = await call("/api/dishes", { token });
 const list = dishes.json?.dishes ?? [];
 check("GET /api/dishes returns 200", dishes.status === 200);
-check("the catalogue has at least 40 dishes", list.length >= 40, `count=${list.length}`);
+check("the catalogue has at least 90 dishes", list.length >= 90, `count=${list.length}`);
 check(
   "every dish has a KES price, carbs, calories and a GI",
   list.every(

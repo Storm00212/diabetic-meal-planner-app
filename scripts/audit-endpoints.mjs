@@ -214,6 +214,28 @@ check("PATCH /api/user/budget -> 200", patchedBudget.status === 200);
 
 const settings = await call("/api/settings", { token, base: SERVICES.auth });
 check("GET /api/settings -> 200", settings.status === 200);
+check(
+  "the user carries a portion profile",
+  settings.json?.sex !== undefined && settings.json?.activityLevel !== undefined,
+  `sex=${settings.json?.sex} activity=${settings.json?.activityLevel}`,
+);
+
+const portionTargets = await call("/api/user/portion-targets", {
+  token,
+  base: SERVICES.auth,
+});
+check(
+  "GET /api/user/portion-targets -> 200 with the targets",
+  portionTargets.status === 200 &&
+    typeof portionTargets.json?.calories === "number" &&
+    typeof portionTargets.json?.carbsG === "number" &&
+    typeof portionTargets.json?.basis === "string",
+  JSON.stringify(portionTargets.json).slice(0, 120),
+);
+check(
+  "the portion targets say how they were worked out",
+  typeof portionTargets.json?.personalised === "boolean",
+);
 
 const patchedSettings = await call("/api/settings", {
   method: "PATCH",
@@ -230,7 +252,15 @@ console.log("\nsvc-catalog");
 const dishes = await call("/api/dishes", { token, base: SERVICES.catalog });
 const list = dishes.json?.dishes ?? [];
 check("GET /api/dishes -> 200", dishes.status === 200);
-check("the catalogue is populated", list.length >= 40, `count=${list.length}`);
+check("the catalogue is populated", list.length >= 90, `count=${list.length}`);
+check(
+  "every dish has a serving label",
+  list.every((dish) => typeof dish.servingLabel === "string" && dish.servingLabel.length > 0),
+);
+check(
+  "every dish has a county",
+  list.every((dish) => typeof dish.region === "string" && dish.region.length > 0),
+);
 
 const stats = await call("/api/dishes/stats", { token, base: SERVICES.catalog });
 check(
@@ -238,6 +268,38 @@ check(
   stats.status === 200 && typeof stats.json?.total === "number",
   JSON.stringify(stats.json),
 );
+
+// --- Session 2: the swap endpoint -----------------------------------------
+const highGiDish = list.find((dish) => dish.glycemicIndex > 30);
+const swap = await call(`/api/dishes/${highGiDish.id}/swap?limit=3`, {
+  token,
+  base: SERVICES.catalog,
+});
+check("GET /api/dishes/:id/swap -> 200", swap.status === 200);
+check(
+  "every alternative is no dearer and has a lower glycemic index",
+  (swap.json?.alternatives ?? []).every(
+    (alternative) =>
+      alternative.cost <= highGiDish.cost &&
+      alternative.glycemicIndex < highGiDish.glycemicIndex,
+  ),
+  `${(swap.json?.alternatives ?? []).length} alternatives`,
+);
+check(
+  "each alternative explains the swap",
+  (swap.json?.alternatives ?? []).every(
+    (alternative) =>
+      typeof alternative.saving === "number" &&
+      typeof alternative.giDrop === "number" &&
+      typeof alternative.reason === "string" &&
+      alternative.reason.length > 0,
+  ),
+);
+const swapMissing = await call("/api/dishes/999999/swap", {
+  token,
+  base: SERVICES.catalog,
+});
+check("GET /api/dishes/:id/swap for a missing dish -> 404", swapMissing.status === 404);
 
 const created = await call("/api/dishes", {
   method: "POST",
@@ -307,6 +369,16 @@ check(
   "the plan fills three slots",
   Object.values(generated.json?.plan?.slots ?? {}).filter(Boolean).length === 3,
 );
+check(
+  "the plan explains every slot",
+  ["morning", "afternoon", "evening"].every(
+    (slot) => (generated.json?.plan?.reasons?.[slot] ?? []).length > 0,
+  ),
+);
+check(
+  "the reasons quote the caller's own budget",
+  JSON.stringify(generated.json?.plan?.reasons ?? {}).includes("KSh"),
+);
 
 const saved = await call("/api/plans", {
   method: "POST",
@@ -325,6 +397,12 @@ const plans = await call("/api/plans", { token, base: SERVICES.planner });
 check(
   "GET /api/plans -> 200 with items",
   plans.status === 200 && (plans.json?.plans ?? []).some((p) => p.items?.length),
+);
+check(
+  "saved plan items carry a reason",
+  (plans.json?.plans ?? [])
+    .flatMap((plan) => plan.items ?? [])
+    .every((item) => typeof item.reason === "string"),
 );
 
 const itemId = plans.json?.plans?.[0]?.items?.[0]?.id;
@@ -446,6 +524,7 @@ const ROUTING = [
   ["GET", "/api/auth/me", "auth"],
   ["GET", "/api/user/profile", "auth"],
   ["GET", "/api/user/budget", "auth"],
+  ["GET", "/api/user/portion-targets", "auth"],
   ["GET", "/api/settings", "auth"],
   ["GET", "/api/dishes", "catalog"],
   ["GET", "/api/dishes/stats", "catalog"],

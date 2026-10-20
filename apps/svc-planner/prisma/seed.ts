@@ -1,6 +1,12 @@
 import { PrismaClient } from "../generated/prisma/index.js";
-import { KENYAN_DISHES, PERSONAS } from "@glucoplate/data";
-import { SLOTS, dailyAllowance, exclusionsFor, generatePlan } from "@glucoplate/domain";
+import { KENYAN_DISHES, PERSONAS, type SeedDish } from "@glucoplate/data";
+import {
+  SLOTS,
+  dailyAllowance,
+  exclusionsFor,
+  explainPlan,
+  generatePlan,
+} from "@glucoplate/domain";
 import type { Dish } from "@glucoplate/types";
 
 const prisma = new PrismaClient();
@@ -17,28 +23,36 @@ const SEED_TITLE = "Sample daily plan";
  * The Kenyan catalogue as the shared `Dish` contract.
  *
  * The dishes live in svc-catalog's database, so their ids here are only
- * there to satisfy the planner — the plan items store `dishId: 0` and the
- * dish name, which is the snapshot the dashboard shows.
+ * there to satisfy the planner — the plan items store `dishName` and the
+ * nutrition snapshot, which is what the dashboard shows.
  */
-const CATALOGUE: Dish[] = KENYAN_DISHES.map((dish, index) => ({
-  id: index + 1,
-  userId: null,
-  name: dish.name,
-  description: dish.description,
-  mealTime: dish.mealTime,
-  cost: dish.cost,
-  isPantryItem: dish.isPantryItem,
-  calories: dish.calories,
-  carbsG: dish.carbsG,
-  proteinG: dish.proteinG,
-  fatG: dish.fatG,
-  fiberG: dish.fiberG,
-  glycemicIndex: dish.glycemicIndex,
-  region: dish.region,
-  isKenyan: true,
-  source: "catalogue",
-  createdAt: new Date(0).toISOString(),
-}));
+const CATALOGUE: Dish[] = KENYAN_DISHES.map((dish, index) => {
+  // The seed catalogue may or may not carry serving sizes yet; one serving is
+  // the safe fallback.
+  const servingLabel =
+    (dish as SeedDish & { servingLabel?: string }).servingLabel ?? "1 serving";
+
+  return {
+    id: index + 1,
+    userId: null,
+    name: dish.name,
+    description: dish.description,
+    mealTime: dish.mealTime,
+    cost: dish.cost,
+    isPantryItem: dish.isPantryItem,
+    calories: dish.calories,
+    carbsG: dish.carbsG,
+    proteinG: dish.proteinG,
+    fatG: dish.fatG,
+    fiberG: dish.fiberG,
+    glycemicIndex: dish.glycemicIndex,
+    region: dish.region,
+    isKenyan: true,
+    source: "catalogue",
+    createdAt: new Date(0).toISOString(),
+    servingLabel,
+  };
+});
 
 /** A plan is for one calendar day, stored at UTC midnight. */
 function utcMidnight(date: Date): Date {
@@ -149,6 +163,14 @@ async function main() {
     );
     const averageGi = averageGiOf(dishes);
 
+    // The reasons are explained against the persona's own numbers, exactly as
+    // the planner does for a real request.
+    const reasons = explainPlan(result.slots, {
+      budget,
+      carbTarget: persona.dailyCarbTarget,
+      giLimit: persona.dailyGiLimit,
+    });
+
     // Replace this persona's sample plans, leave everything else alone.
     await prisma.mealPlan.deleteMany({
       where: { userId, title: SEED_TITLE },
@@ -189,6 +211,8 @@ async function main() {
             calories: dish.calories,
             glycemicIndex: dish.glycemicIndex,
             servings: 1,
+            /** Why this dish was chosen, in the persona's own numbers. */
+            reason: (reasons[slot] ?? []).join(" "),
           },
         ];
       });

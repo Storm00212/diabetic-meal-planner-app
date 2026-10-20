@@ -187,36 +187,22 @@ userRouter.patch(
   "/api/settings",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const id = callerId(req);
-    const {
-      name,
-      dailyBudget,
-      dailyCarbTarget,
-      dailyGiLimit,
-      dailyCalorieLimit,
-    } = req.body ?? {};
-
-    const current = await authRepository.findById(id);
-    if (!current) throw ApiError.notFound("User not found.");
-
-    await authRepository.update(id, {
-      ...(name !== undefined ? { name: String(name) } : {}),
-      ...(dailyBudget !== undefined
-        ? { dailyBudget: Number(dailyBudget) }
-        : {}),
-      ...(dailyCarbTarget !== undefined
-        ? { dailyCarbTarget: Math.round(Number(dailyCarbTarget)) }
-        : {}),
-      ...(dailyGiLimit !== undefined
-        ? { dailyGiLimit: Math.round(Number(dailyGiLimit)) }
-        : {}),
-      ...(dailyCalorieLimit !== undefined
-        ? { dailyCalorieLimit: Math.round(Number(dailyCalorieLimit)) }
-        : {}),
-      updatedAt: new Date(),
-    });
-
-    const user = await authService.me(id);
+    const user = await authService.updateSettings(callerId(req), req.body ?? {});
     res.json({ ...user, success: true });
+  }),
+);
+
+/**
+ * The caller's daily nutrition targets, calculated from their own profile.
+ *
+ * The calculation lives in `@glucoplate/domain`, so this endpoint only reads
+ * the profile and hands it over.
+ */
+userRouter.get(
+  "/api/user/portion-targets",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const targets = await authService.portionTargets(callerId(req));
+    res.json(targets);
   }),
 );

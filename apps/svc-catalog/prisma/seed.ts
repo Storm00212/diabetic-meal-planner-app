@@ -16,10 +16,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding svc-catalog …");
 
-  const { inserted, skipped } = await seedCatalogue(prisma);
+  const { inserted, updated, skipped } = await seedCatalogue(prisma);
 
   console.log(
-    `  ✓ inserted ${inserted} catalogue dish(es), skipped ${skipped} already present`,
+    `  ✓ inserted ${inserted} catalogue dish(es), refreshed ${updated}, skipped ${skipped} already present`,
   );
 
   const catalogue = await prisma.dish.count({

@@ -1,12 +1,14 @@
 import { Router } from "express";
 import type {
   GeneratePlanRequest,
-  MealPlanWithItems,
   PlanItemStatus,
 } from "@glucoplate/types";
 import { asyncHandler, callerId, requireAuth } from "../../lib/http.js";
 import { ApiError } from "../../lib/errors.js";
-import { plansService } from "./plans.service.js";
+import {
+  plansService,
+  type MealPlanWithReasons,
+} from "./plans.service.js";
 
 /**
  * Meal plan endpoints.
@@ -55,7 +57,7 @@ plansRouter.get(
   "/api/plans",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const plans: MealPlanWithItems[] = await plansService.list(callerId(req));
+    const plans: MealPlanWithReasons[] = await plansService.list(callerId(req));
 
     res.json({ plans });
   }),

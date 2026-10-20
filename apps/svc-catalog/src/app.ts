@@ -61,6 +61,7 @@ export function createApp() {
         "/api/dishes",
         "/api/dishes/stats",
         "/api/dishes/:id",
+        "/api/dishes/:id/swap",
       ],
     });
   });

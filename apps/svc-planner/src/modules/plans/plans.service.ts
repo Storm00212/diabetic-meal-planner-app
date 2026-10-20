@@ -1,10 +1,14 @@
 import {
   PLANNING_AID_NOTICE,
   SLOTS,
+  applyOverrides,
   clinicianBannerFor,
   dailyAllowance,
+  describePlan,
   exclusionsFor,
+  explainPlan,
   generatePlan,
+  summariseSlots,
 } from "@glucoplate/domain";
 import type {
   Dish,
@@ -12,7 +16,6 @@ import type {
   GeneratePlanResponse,
   MealPlan,
   MealPlanItem,
-  MealPlanWithItems,
   MealSlot,
   PlanItemStatus,
   PlanResult,
@@ -123,8 +126,21 @@ export function toMealPlan(row: MealPlanRow): MealPlan {
   };
 }
 
+/**
+ * A saved item, plus the reason the dish was chosen.
+ *
+ * The shared `MealPlanItem` contract has no `reason` field, so the extra
+ * property is added here, in the service, rather than in the shared types.
+ */
+export type MealPlanItemWithReason = MealPlanItem & { reason: string };
+
+/** A plan whose items carry their reasons. */
+export type MealPlanWithReasons = MealPlan & {
+  items: MealPlanItemWithReason[];
+};
+
 /** Maps a stored item onto the shared `MealPlanItem` contract. */
-export function toMealPlanItem(row: MealPlanItemRow): MealPlanItem {
+export function toMealPlanItem(row: MealPlanItemRow): MealPlanItemWithReason {
   return {
     id: row.id,
     planId: row.planId,
@@ -138,7 +154,19 @@ export function toMealPlanItem(row: MealPlanItemRow): MealPlanItem {
     glycemicIndex: row.glycemicIndex,
     status: row.status as PlanItemStatus,
     actualCost: row.actualCost,
+    /** Why this dish was chosen, snapshotted with the plan. */
+    reason: row.reason,
   };
+}
+
+/**
+ * The reason text stored on a saved item.
+ *
+ * The explanations are short sentences, so one line of plain text holds the
+ * whole story and reads well next to a saved plan.
+ */
+export function reasonText(reasons: string[] | undefined): string {
+  return (reasons ?? []).filter(Boolean).join(" ");
 }
 
 /** Everything the planner worked out for one request. */
@@ -169,10 +197,45 @@ export const plansService = {
 
     const { budget, carbTarget, giLimit } = resolveTargets(user, body);
 
-    const result: PlanResult = generatePlan(dishes, budget, carbTarget, {
+    const generated = generatePlan(dishes, budget, carbTarget, {
       giLimit,
       exclude: exclusionsFor(user),
     });
+
+    // A person can swap a dish in the preview. The swap is applied here so
+    // that what they saved is what they saw.
+    const { slots, replacedBy } = applyOverrides(
+      generated.slots,
+      body?.overrides,
+      dishes,
+      { giLimit },
+    );
+
+    const totals = summariseSlots(slots);
+
+    // The reasons are explained against the very numbers the plan was built
+    // with, so the sentences quote the caller's own budget, carbohydrate
+    // allowance and glycemic index limit.
+    const reasons = explainPlan(slots, {
+      budget,
+      carbTarget,
+      giLimit,
+      replacedBy,
+    });
+
+    const result: PlanResult = {
+      ...generated,
+      slots,
+      reasons,
+      totalCost: totals.totalCost,
+      totalCarbs: totals.totalCarbs,
+      totalCalories: totals.totalCalories,
+      highestGi: totals.highestGi,
+      withinBudget: totals.totalCost <= budget + 0.0001,
+      withinCarbs: totals.totalCarbs <= carbTarget,
+      withinGi: giLimit === undefined ? true : totals.highestGi <= giLimit,
+      message: describePlan(totals, { budget, carbTarget, giLimit }),
+    };
 
     return { result, budget, carbTarget, giLimit, user };
   },
@@ -248,6 +311,8 @@ export const plansService = {
             calories: dish.calories,
             glycemicIndex: dish.glycemicIndex,
             servings: 1,
+            /** Why this dish was chosen, saved with the plan. */
+            reason: reasonText(result.reasons[slot]),
           },
         ];
       }),
@@ -262,7 +327,7 @@ export const plansService = {
   },
 
   /** The caller's plans, newest first, each with its items. */
-  async list(userId: number): Promise<MealPlanWithItems[]> {
+  async list(userId: number): Promise<MealPlanWithReasons[]> {
     const plans = await plansRepository.listForUser(userId);
     if (plans.length === 0) return [];
 
@@ -293,7 +358,7 @@ export const plansService = {
   async updateItem(
     userId: number,
     body: { itemId: number; status: PlanItemStatus },
-  ): Promise<{ success: true; item: MealPlanItem }> {
+  ): Promise<{ success: true; item: MealPlanItemWithReason }> {
     const itemId = Number(body?.itemId);
     const status = String(body?.status ?? "") as PlanItemStatus;
 
