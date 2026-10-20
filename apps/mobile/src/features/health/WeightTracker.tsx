@@ -42,7 +42,7 @@ export function WeightTracker() {
       setCurrent(Number(weight));
       Alert.alert("Success", "Weight updated successfully.");
       setWeight("");
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Could not update weight.");
     } finally {
       setLoading(false);

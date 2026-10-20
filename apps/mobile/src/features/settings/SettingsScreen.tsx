@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  SafeAreaView,
-  Alert
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, SafeAreaView } from "react-native";
+
 import { apiFetch, apiJson } from '@/lib/api-client';
 
 export default function SettingsScreen() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [dailyBudget, setDailyBudget] = useState(0);
   const [dailyCarbTarget, setDailyCarbTarget] = useState(0);

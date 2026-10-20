@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/app/api";
-import { motion } from "framer-motion";
-import { money } from "@glucoplate/domain";
 
 export function WeightTracker() {
   const [weight, setWeight] = useState<number | null>(null);

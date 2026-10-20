@@ -59,6 +59,9 @@ function readEnvFile(path) {
 const rootEnv = {
   ...readEnvFile(join(root, ".env")),
   ...readEnvFile(join(root, ".env.local")),
+  // Environment variables win, so this script also works on a build host
+  // (Render) where the values are injected rather than written to a file.
+  ...process.env,
 };
 
 const jwtSecret =

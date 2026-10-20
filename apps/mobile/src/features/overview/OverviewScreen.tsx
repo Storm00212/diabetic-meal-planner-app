@@ -1,42 +1,67 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Link } from 'expo-router';
-import { apiFetch } from '@/lib/api-client';
-import { money } from '@glucoplate/domain';
-import { giBand } from '@glucoplate/domain';
+import { api } from '@/lib/api-client';
+import { useCurrentUser } from '@/shared/useCurrentUser';
+import { money, giBand } from '@glucoplate/domain';
 import { Activity, Utensils, Wallet, Calendar } from 'lucide-react-native';
 
+type DishStats = { total: number; avgCost: number; avgGi: number };
+
+type RecentPlan = {
+  id: number;
+  planDate: string;
+  totalCost: number;
+  budget: number;
+  totalCarbs: number;
+  totalCalories: number;
+};
+
 export default function OverviewPage() {
-  // In a real app, we'd use a hook to fetch this data from the API
-  // For the conversion phase, we're mirroring the logic from the web page
+  const { user, loading: userLoading } = useCurrentUser();
+  const [stats, setStats] = useState<DishStats>({ total: 0, avgCost: 0, avgGi: 0 });
+  const [recent, setRecent] = useState<RecentPlan[]>([]);
 
-  const user = {
-    name: "User",
-    dailyBudget: 20,
-    dailyCarbTarget: 150,
-  };
+  useEffect(() => {
+    let cancelled = false;
 
-  const stats = {
-    total: 12,
-    avgCost: 5.50,
-    avgGi: 52,
-  };
+    async function run() {
+      const [dishStats, plans] = await Promise.allSettled([
+        api.catalog.stats(),
+        api.planner.list(),
+      ]);
 
-  const planStats = { total: 5 };
-  const recent = [
-    { id: 1, planDate: '2023-10-01', totalCost: 15, budget: 20, totalCarbs: 120, totalCalories: 1800 },
-    { id: 2, planDate: '2023-10-02', totalCost: 22, budget: 20, totalCarbs: 130, totalCalories: 1900 },
-  ];
+      if (cancelled) return;
+
+      if (dishStats.status === 'fulfilled') setStats(dishStats.value);
+      if (plans.status === 'fulfilled') {
+        setRecent((plans.value.plans ?? []).slice(0, 3) as RecentPlan[]);
+      }
+    }
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const dishCount = stats.total;
-  const avgCost = stats.avgCost;
   const avgGi = Math.round(stats.avgGi);
   const band = giBand(avgGi);
+  const planStats = { total: recent.length };
+
+  if (userLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
+        <Text className="text-slate-500">Loading GlucoPlate…</Text>
+      </SafeAreaView>
+    );
+  }
 
   const cards = [
     { label: "Dishes in bucket", value: dishCount.toString(), icon: <Utensils size={24} color="#0d9488" />, hint: "Available to plan meals" },
-    { label: "Daily budget", value: money(user.dailyBudget), icon: <Wallet size={24} color="#0d9488" />, hint: "Your spending target" },
-    { label: "Carb target", value: `${user.dailyCarbTarget} g`, icon: <Activity size={24} color="#0d9488" />, hint: "Keeps sugars stable" },
+    { label: "Daily budget", value: money(user?.dailyBudget ?? 0), icon: <Wallet size={24} color="#0d9488" />, hint: "Your spending target" },
+    { label: "Carb target", value: `${user?.dailyCarbLimit ?? 0} g`, icon: <Activity size={24} color="#0d9488" />, hint: "Keeps sugars stable" },
     { label: "Plans generated", value: planStats.total.toString(), icon: <Calendar size={24} color="#0d9488" />, hint: "Saved meal plans" },
   ];
 
@@ -45,7 +70,7 @@ export default function OverviewPage() {
       <ScrollView className="mx-auto max-w-6xl p-4 space-y-8">
         <View className="space-y-2">
           <Text className="text-2xl font-bold text-slate-900">
-            Welcome back, {user.name} 👋
+            Welcome back, {user?.name ?? "there"} 👋
           </Text>
           <Text className="text-slate-500">
             Here&apos;s your meal-planning snapshot for staying affordable and sugar-safe.
@@ -63,6 +88,35 @@ export default function OverviewPage() {
               <Text className="mt-1 text-xs text-slate-400">{c.hint}</Text>
             </View>
           ))}
+        </View>
+
+        <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Text className="text-lg font-semibold text-slate-900">Bucket health</Text>
+          {stats.total === 0 ? (
+            <Text className="mt-3 text-sm text-slate-500">
+              No dishes yet. Add some to see insights here.
+            </Text>
+          ) : (
+            <View className="mt-4 flex-row justify-between">
+              <View>
+                <Text className="text-sm text-slate-500">Average dish cost</Text>
+                <Text className="text-xl font-bold text-slate-900">
+                  {money(stats.avgCost)}
+                </Text>
+              </View>
+              <View>
+                <Text className="text-sm text-slate-500">Average glycemic index</Text>
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-xl font-bold text-slate-900">{avgGi}</Text>
+                  <View className="rounded-full bg-emerald-100 px-2 py-0.5">
+                    <Text className="text-xs font-semibold text-emerald-700">
+                      {band.label}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -115,6 +115,8 @@ export type Dish = {
   fatG: number;
   fiberG: number;
   glycemicIndex: number;
+  /** What one serving actually is, e.g. "1 chapati (60 g)". */
+  servingLabel: string;
   region: string;
   isKenyan: boolean;
   source: string;
@@ -156,7 +158,12 @@ export type PlanSlot = {
 
 /** The result of a plan generation — a preview that has not been saved. */
 export type PlanResult = {
-  slots: Record<MealSlot, PlanSlot["dish"]>;
+  slots: Record<MealSlot, Dish | null>;
+  /**
+   * Why each dish was chosen, in the user's own numbers — cost against the
+   * budget, glycemic index against the limit, carbohydrate against the cap.
+   */
+  reasons: Record<MealSlot, string[]>;
   totalCost: number;
   totalCarbs: number;
   totalCalories: number;
@@ -166,6 +173,49 @@ export type PlanResult = {
   withinGi: boolean;
   highestGi: number;
   message: string;
+};
+
+/** A cheaper, lower-glycemic-index alternative for a dish. */
+export type SwapCandidate = Dish & {
+  /** How much cheaper the alternative is, in KSh. */
+  saving: number;
+  /** How much lower the glycemic index is. */
+  giDrop: number;
+  reason: string;
+};
+
+/** How much the person moves in a day. */
+export const ACTIVITY_LEVELS = [
+  "sedentary",
+  "light",
+  "moderate",
+  "active",
+] as const;
+export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
+
+export const SEXES = ["male", "female", "unspecified"] as const;
+export type Sex = (typeof SEXES)[number];
+
+/** The physical details a portion calculator needs. */
+export type PortionProfile = {
+  age: number | null;
+  sex: Sex;
+  heightCm: number | null;
+  weightKg: number | null;
+  activityLevel: ActivityLevel;
+};
+
+/** The daily nutrition targets derived from a portion profile. */
+export type PortionTargets = {
+  calories: number;
+  carbsG: number;
+  proteinG: number;
+  fatG: number;
+  bmr: number;
+  tdee: number;
+  basis: string;
+  /** True when the profile was complete enough to personalise the targets. */
+  personalised: boolean;
 };
 
 export type MealPlan = {
@@ -289,6 +339,19 @@ export type UpdateSettingsRequest = {
   dailyCarbTarget?: number;
   dailyGiLimit?: number;
   dailyCalorieLimit?: number;
+  age?: number;
+  heightCm?: number;
+  currentWeight?: number;
+  targetWeight?: number;
+  sex?: Sex;
+  activityLevel?: ActivityLevel;
+};
+
+/** The body of a swap request. */
+export type SwapRequest = {
+  dishId: number;
+  /** How many alternatives to return. */
+  limit?: number;
 };
 
 export type UpdatePlanItemRequest = {

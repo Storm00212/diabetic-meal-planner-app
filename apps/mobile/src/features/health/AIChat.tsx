@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { apiFetch, apiJson } from '@/lib/api-client';
+import { apiJson } from '@/lib/api-client';
 
 type Message = {
   role: 'user' | 'assistant';

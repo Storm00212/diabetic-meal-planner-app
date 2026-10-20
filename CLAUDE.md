@@ -3,57 +3,70 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Workspace Overview
-GlucoPlate is a budget-aware, sugar-safe meal planner for people with diabetes in Kenya. It has a **headless architecture**: an **Expo (React Native)** app and a **Next.js** app share one JSON API and one PostgreSQL database.
+GlucoPlate is a budget-aware, sugar-safe meal planner for people with diabetes in Kenya. It is a **Turborepo monorepo**: a headless JSON API split into four domain services, a gateway, and two clients (Next.js-style web app and an Expo mobile app) that share one contract.
 
 ## High-Level Architecture
-- **Web app + API**: Next.js 16 (App Router) in `src/app`. The API routes live in `src/app/api/`.
-- **Mobile app**: Expo SDK 57 / Expo Router in `src/expo-app`.
-- **Database**: PostgreSQL with Drizzle ORM (`src/db/schema.ts`).
-- **Auth**: stateless JWT access tokens (`src/lib/jwt.ts`), signed with `jose` (HS256) using `JWT_SECRET`. 7-day expiry. The web app also mirrors the token into an httpOnly cookie (`glucoplate_token`); the Expo app stores it in `expo-secure-store` and sends `Authorization: Bearer <token>`.
-- **Key logic**: `src/lib/planner.ts` searches combinations of one dish per meal slot and scores them on carbohydrate fill, protein and average glycemic index, subject to the user's budget, carb target, GI ceiling and allergies/dislikes.
+- **Monorepo**: npm workspaces + Turborepo. Root `package.json` holds every script; `turbo.json` holds the task graph.
+- **Clients**
+  - `apps/web` — Vite + React 19 + React Router 7 + Tailwind 4. Feature-driven: `src/features/<domain>/`.
+  - `apps/mobile` — Expo SDK 57 / Expo Router + NativeWind. Routes in `app/`, screens in `src/features/<domain>/`.
+- **Backend** — five Express apps, each with its own `prisma/` directory and its own explicit port:
+  - `apps/gateway` (4000) — thin reverse proxy; the only URL the clients use.
+  - `apps/svc-auth` (4001) — users, JWT access tokens, budgets, clinical limits, payments table.
+  - `apps/svc-catalog` (4002) — the shared Kenyan dish catalogue plus user dishes.
+  - `apps/svc-planner` (4003) — meal plans, plan items, the planner algorithm.
+  - `apps/svc-health` (4004) — weight logs and targets, analytics, chat, nutrients.
+- **Database-per-service.** No service reads another service's tables. `userId` is a plain integer copied from the caller's token, never a foreign key.
+- **Auth**: stateless JWT (HS256, `jose`), 7-day expiry, verified by every service with the shared `JWT_SECRET`.
+- **Shared packages**: `@glucoplate/types` (the contract), `@glucoplate/domain` (pure business rules), `@glucoplate/data` (seed fixtures), `@glucoplate/api-client` (typed clients + tracing), `@glucoplate/ui` (design tokens), `@glucoplate/config` (tsconfig + env helpers).
 
-> **Route discovery matters.** Next.js resolves its App Router from `./app` and only falls back to `./src/app`. The Expo Router therefore lives in `src/expo-app` and is pointed at with `EXPO_ROUTER_APP_ROOT=src/expo-app` (see the `mobile` npm scripts). Never move the Expo routes back to the repository root.
+> **Database-per-service means service-to-service HTTP calls.** `svc-planner` fetches the catalogue from `svc-catalog` and the caller's limits from `svc-auth`; `svc-health` fetches plans from `svc-planner`. Each caches the answer for 60 seconds and serves the last cached copy if the upstream is down.
 
 ## Directory Structure
-- `src/app/`: Next.js web pages and API route handlers.
-  - `src/app/api/`: REST-ish JSON API (`auth`, `dishes`, `plans`, `settings`, `user`, `weight`, `analytics`, `chat`, `nutrients`, `health`).
-- `src/expo-app/`: Expo Router screens and layouts.
-  - `src/expo-app/dashboard/`: Overview, Bucket/Dishes, Planner, Plans, Analytics, Health Hub, Settings.
-  - `src/expo-app/login.tsx`: Authentication entry point.
-- `src/lib/`: Shared logic used by both clients.
-  - `src/lib/jwt.ts`: sign/verify access tokens.
-  - `src/lib/auth.ts`: password hashing (scrypt), token issuing, `getCurrentUser()`, `toPublicUser()`.
-  - `src/lib/planner.ts`: the meal-plan algorithm.
-  - `src/lib/budget.ts`: converts a period budget into a daily allowance.
-  - `src/lib/medical.ts`: disclaimer copy, diabetes-level metadata, clinician-banner rules.
-  - `src/lib/seed.ts`: shared Kenyan catalogue access + `ensureKenyanCatalogue()`.
-  - `src/lib/data/*.json`: the Kenyan dish catalogue and the demo personas.
-  - `src/lib/mobile/api-client.ts`: mobile HTTP client (`apiFetch` returns a `Response`, `apiJson` returns parsed JSON).
-- `src/db/`: Drizzle schema, connection pool, migrations in `drizzle/`.
-- `src/proxy.ts`: Next.js 16 proxy (was `middleware.ts`) that adds CORS headers to `/api/*`.
+- `apps/web/src/`
+  - `app/` — `App.tsx` (the router), `AuthProvider.tsx` (token + current user), `api.ts` (the one API client instance).
+  - `features/<domain>/` — one folder per business domain (`auth`, `overview`, `catalog`, `planner`, `plans`, `analytics`, `health`, `settings`).
+  - `shared/components/` — `Logo`, `MedicalDisclaimer`, `ClinicianBanner`.
+- `apps/mobile/app/` — Expo Router route files; each is a one-line re-export of a screen in `src/features/`.
+- `apps/svc-*/src/`
+  - `index.ts` — entry: load env, listen, shut down cleanly.
+  - `env.ts` — loads `.env` before anything reads it. **Must be the first import.**
+  - `app.ts` — builds the Express app (no socket).
+  - `config.ts` — reads and validates the environment.
+  - `lib/` — `logger`, `prisma`, `errors`, `jwt`, `http` (asyncHandler, requestContext, requestLogger, requireAuth).
+  - `modules/<feature>/` — `<feature>.routes.ts` (HTTP), `<feature>.service.ts` (rules), `<feature>.repository.ts` (SQL).
+- `packages/types/src/index.ts` — DTOs, enums and `SERVICE_PORTS`. **Change the contract here first**; the compiler finds every consumer.
+- `packages/domain/src/index.ts` — `generatePlan`, `dailyAllowance`, `exclusionsFor`, `PLANNING_AID_NOTICE`, `clinicianBannerFor`, `money`.
 
 ## Common Commands
 ### Development
-- **Web**: `npm run dev` (http://localhost:3000)
-- **Mobile**: `npm run mobile` (Expo Go). Set `EXPO_PUBLIC_API_URL` first — on a physical device use your computer's LAN IP.
+- **Everything**: `npm run dev` (turbo runs the gateway, the four services and the web app in parallel).
+- **One client**: `npm run dev:web` / `npm run dev:mobile`.
+- **One service**: `npm run dev:auth` / `dev:catalog` / `dev:planner` / `dev:health` / `dev:gateway`.
+- **A client next to one service** (the debugging pair): `npm run dev:web+planner`.
+- **The backend only**: `npm run dev:backend`.
 - **Type check**: `npm run typecheck`
 - **Linting**: `npm run lint`
 - **Build**: `npm run build`
-- **End-to-end API test**: `npm run smoke` (needs `npm run dev` running)
+- **End-to-end test**: `npm run smoke` (needs the stack running)
 
 ### Database
-- **Local embedded Postgres**: `npm run db:local` (PGlite over the Postgres wire protocol; no install needed). Wipe it with `npm run db:local:reset`.
-- **Push schema**: `npm run db:push` (reads `DATABASE_URL`)
-- **Generate a migration**: `npm run db:generate`
-- **Seed**: `npm run db:seed` (idempotent; `-- --reset-plans` regenerates the sample plans)
-- **Studio**: `npm run db:studio`
+- **Local embedded Postgres** (one instance per service): `npm run db:local`. Wipe with `npm run db:local:reset`.
+- **Per-workspace env files**: `npm run env:sync` (writes `apps/svc-*/.env`, `apps/gateway/.env`, `apps/web/.env.local`, `apps/mobile/.env` from the root `.env.local`).
+- **Generate a Prisma client**: `npm run db:generate`
+- **Push a schema**: `npm run db:push`
+- **Seed**: `npm run db:seed`
 
 ## Development Guidelines
-- **Money is KES, always.** Use `money()` from `@/lib/format`. Never hard-code a currency symbol.
-- **Never commit secrets.** `JWT_SECRET` and the M-Pesa credentials live in `.env.local` (git-ignored) and in Render's environment settings. `.env.example` is the only env file that is tracked.
-- **UI components**: React Native primitives (`View`, `Text`, `TouchableOpacity`) for Expo screens; HTML + Tailwind for Next.js screens.
-- **Styling**: NativeWind classes for mobile, Tailwind for web.
+- **A service never reads another service's database.** It calls the API and caches the result.
+- **Every route lives in a feature module** under `src/modules/<domain>/`. No route handlers in `app.ts`.
+- **Ownership is enforced in the query** — `where: { id, userId }`, never in the UI.
+- **One error shape**: throw `ApiError`; the error middleware renders `{ error, code, requestId }`.
+- **Every request is traced**: `requestContext` assigns an `x-request-id`, `requestLogger` logs it, the response echoes it. Clients may enable `VITE_DEBUG_API` / `EXPO_PUBLIC_DEBUG`.
+- **Money is KES.** Use `money()` from `@glucoplate/domain`. Never hard-code a currency symbol.
+- **Never commit secrets.** `JWT_SECRET` and the M-Pesa credentials live in `.env.local` and each service's `.env` (all git-ignored) and in Render's environment settings.
+- **UI components**: React Native primitives (`View`, `Text`, `TouchableOpacity`) for Expo screens; HTML + Tailwind for web screens.
+- **Styling**: NativeWind classes for mobile, Tailwind 4 for web. The mobile app pins Tailwind 3 (the version NativeWind supports).
 - **API calls**: use `apiFetch` (raw `Response`) when you need the status code, `apiJson` (parsed body) otherwise. Do not mix the two.
-- **Safety copy**: never hand-write the disclaimer. Use `PLANNING_AID_NOTICE` and `clinicianBannerFor()` from `@/lib/medical`.
-- **Safe areas**: wrap screen roots in `SafeAreaView` on mobile.
-- **Route handlers**: resolve the caller with `getCurrentUser()` and return 401 when it is null. Ownership must be enforced in the query, not just in the UI.
+- **Safety copy**: never hand-write the disclaimer. Use `PLANNING_AID_NOTICE` and `clinicianBannerFor()` from `@glucoplate/domain`.
+- **Route handlers**: resolve the caller with `getCurrentUser()` and return 401 when it is null.

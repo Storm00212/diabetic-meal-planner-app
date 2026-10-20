@@ -12,32 +12,58 @@ daily budget in Kenyan shillings. The same catalogue produces a different
 plan for every persona — a university student, a primary school child, a
 mechanic, a retired teacher and a smallholder farmer.
 
-## 🚀 Architecture
+## 🏗️ Architecture
 
-- **Web**: Next.js 16 (App Router) in `src/app` — pages *and* the JSON API.
-- **Mobile**: Expo SDK 57 / Expo Router in `src/expo-app`.
-- **Shared**: `src/lib` — planner, budget rules, auth, safety copy.
-- **Database**: PostgreSQL (Drizzle ORM) in `src/db/schema.ts`.
-- **Auth**: stateless JWT access tokens (`src/lib/jwt.ts`), 7-day expiry.
-  The web app mirrors the token into an httpOnly cookie; the Expo app sends
-  it as `Authorization: Bearer <token>`.
-- **Hosting**: Neon Free (Postgres) + Render Free (web service) — both $0.
+A **Turborepo monorepo**: two frontends, one gateway, four domain services
+with their own databases, and a set of shared packages holding the contract
+between them.
+
+```
+apps/
+├── web/          Vite + React single page app        (port 5173)
+├── mobile/       Expo / React Native                 (Expo Go)
+├── gateway/      the single entry point               (port 4000)
+├── svc-auth/     accounts, JWT, budgets, limits       (port 4001)
+├── svc-catalog/  the Kenyan dish catalogue            (port 4002)
+├── svc-planner/  meal plans + the planner algorithm   (port 4003)
+└── svc-health/   weight, analytics, chat, nutrients   (port 4004)
+
+packages/
+├── types/        the API contract: DTOs, enums, SERVICE_PORTS
+├── domain/       pure business rules: planner, budget, safety copy
+├── data/         seed fixtures: the 42 dishes, the 5 personas
+├── api-client/   typed HTTP clients + request tracing
+├── ui/           design tokens shared by web and mobile
+└── config/       shared tsconfig and env helpers
+```
+
+Each service owns its own **database** (`prisma/` per service, database-per-
+service). Where one service needs another's data it calls its HTTP API and
+caches the answer. The **gateway** is a thin reverse proxy, so both clients
+only need one base URL and a single `x-request-id` traces a request through
+every service it touched.
+
+📖 **[docs/MONOREPO.md](docs/MONOREPO.md)** — the full blueprint, the file
+tree, the debugging setup and every root script.
+📖 **[docs/SERVICE-TEMPLATE.md](docs/SERVICE-TEMPLATE.md)** — how to write a
+new service.
 
 ## ✨ Key Features
 
 - **Persona-aware planner** — carbohydrate target, GI ceiling, budget and
-  allergies/dislikes all change the result (`src/lib/planner.ts`).
+  allergies/dislikes all change the result (`packages/domain`).
 - **Kenyan dish catalogue** — 42 dishes with KSh prices, carbs, protein,
-  fibre and GI (`src/lib/data/kenyan-dishes.json`).
+  fibre and GI (`packages/data`).
 - **Five demo personas** — healthy → critical, across student, child,
-  working-class, elderly and rural-farmer settings
-  (`src/lib/data/personas.json`).
+  working-class, elderly and rural-farmer settings.
 - **Safety first** — a "planning aid, not medical advice" notice everywhere,
   and a red *talk to your clinician* banner for the critical and high-risk
-  personas (`src/lib/medical.ts`).
-- **Budget tracking** — daily / weekly / until-payday budgets in KSh, with
-  a live KSh total on every plan.
+  personas.
+- **Budget tracking** — daily / weekly / until-payday budgets in KSh, with a
+  live KSh total on every plan.
 - **Analytics** — carb trends and GI distribution over saved plans.
+- **One contract, three consumers** — web, mobile and every service import
+  the same types from `@glucoplate/types`.
 
 ## 🛠️ Getting Started
 
@@ -50,13 +76,18 @@ cd diabetic-meal-planner-app
 npm install
 
 cp .env.example .env.local     # then edit DATABASE_URL and JWT_SECRET
-npm run db:local                # terminal 1: embedded Postgres, no install needed
-npm run db:push && npm run db:seed   # terminal 2: schema + Kenyan data
-npm run dev                     # http://localhost:3000
+npm run env:sync               # writes each workspace's own .env
+
+# terminal 1
+npm run db:local               # four embedded Postgres instances, no install needed
+
+# terminal 2
+npm run db:generate && npm run db:push && npm run db:seed
+npm run dev                    # the gateway, the four services and the web app
 ```
 
-Full step-by-step guide, hosting setup and the demo script:
-**[docs/SESSION-1-SETUP.md](docs/SESSION-1-SETUP.md)**
+Open <http://localhost:5173>. The full walkthrough, the hosting setup and the
+demo script: **[docs/SESSION-1-SETUP.md](docs/SESSION-1-SETUP.md)**
 
 ### Demo accounts
 
@@ -72,25 +103,14 @@ Full step-by-step guide, hosting setup and the demo script:
 ## 🧪 Checks
 
 ```bash
-npm run lint       # eslint
-npm run typecheck  # tsc --noEmit
-npm run build      # next build
-npm run smoke      # 45 end-to-end API checks against a running server
+npm run lint       # eslint, every workspace
+npm run typecheck  # tsc, every workspace
+npm run build      # every workspace
+npm run smoke      # cross-service end-to-end test against a running stack
 ```
 
-## 📂 Project Structure
-
-```
-src/app/            Next.js web app + JSON API
-src/app/api/        Route handlers (auth, dishes, plans, payments-ready schema, ...)
-src/expo-app/       Expo Router mobile app
-src/lib/            Shared logic: planner, budget, auth, JWT, medical copy
-src/lib/data/       Kenyan dishes + personas (JSON, single source of truth)
-src/db/             Drizzle schema and connection
-src/components/     Shared React components (web + mobile)
-drizzle/            SQL migrations
-scripts/            seed.mjs, smoke.mjs
-```
+`npm run smoke` talks to the gateway the way the clients do, and to every
+service directly, so it proves the whole system is wired together.
 
 ## ⚖️ Medical Disclaimer
 

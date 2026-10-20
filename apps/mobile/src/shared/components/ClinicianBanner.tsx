@@ -9,7 +9,6 @@ import { clinicianBannerFor } from "@glucoplate/domain";
  */
 export function ClinicianBanner({
   message,
-  className = "",
 }: {
   message?: string | null;
   className?: string;
@@ -49,12 +48,9 @@ export function ClinicianBanner({
 
 export function ClinicianBannerForUser({
   user,
-  className = "",
 }: {
   user: { diabetesLevel?: string | null; needsClinicianReview?: boolean | null };
   className?: string;
 }) {
-  return (
-    <ClinicianBanner message={clinicianBannerFor(user)} className={className} />
-  );
+  return <ClinicianBanner message={clinicianBannerFor(user)} />;
 }

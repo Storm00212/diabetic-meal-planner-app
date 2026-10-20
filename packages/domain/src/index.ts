@@ -10,6 +10,9 @@
 
 import type { Dish, DiabetesLevel, MealSlot, UserSetting } from "@glucoplate/types";
 
+export * from "./portion";
+export * from "./explain";
+
 // ---------------------------------------------------------------------------
 // Planner
 // ---------------------------------------------------------------------------

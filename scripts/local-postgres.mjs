@@ -63,43 +63,76 @@ if (process.argv.includes("--reset")) {
 
 const children = [];
 
-for (const service of SERVICES) {
-  const dataDir = join(root, ".pgdata", service.name);
-  mkdirSync(dataDir, { recursive: true });
+/**
+ * Starts one instance and resolves when it is listening.
+ *
+ * The instances are started one after another on purpose: PGlite cannot
+ * initialise several databases at the same moment, and starting them in
+ * parallel fails with a filesystem error.
+ */
+function start(service) {
+  return new Promise((resolve, reject) => {
+    const dataDir = join(root, ".pgdata", service.name);
+    mkdirSync(dataDir, { recursive: true });
 
-  const child = spawn(
-    process.execPath,
-    [
-      serverEntry,
-      "-d",
-      dataDir,
-      "-p",
-      String(service.port),
-      "-h",
-      "127.0.0.1",
-      "-m",
-      "10",
-    ],
-    { stdio: ["ignore", "pipe", "pipe"] },
-  );
+    const child = spawn(
+      process.execPath,
+      [
+        serverEntry,
+        "-d",
+        dataDir,
+        "-p",
+        String(service.port),
+        "-h",
+        "127.0.0.1",
+        "-m",
+        "10",
+      ],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
 
-  const prefix = `[db:${service.name}:${service.port}]`;
-  child.stdout.on("data", (chunk) => {
-    for (const line of String(chunk).split("\n")) {
+    const prefix = `[db:${service.name}:${service.port}]`;
+    let settled = false;
+
+    const onLine = (line) => {
       if (line.trim()) console.log(`${prefix} ${line}`);
-    }
-  });
-  child.stderr.on("data", (chunk) => {
-    for (const line of String(chunk).split("\n")) {
-      if (line.trim()) console.error(`${prefix} ${line}`);
-    }
-  });
+      if (!settled && line.includes("listening on")) {
+        settled = true;
+        resolve(child);
+      }
+    };
 
-  child.on("exit", (code) => {
-    console.log(`${prefix} exited with code ${code}`);
-  });
+    child.stdout.on("data", (chunk) => {
+      for (const line of String(chunk).split("\n")) onLine(line);
+    });
+    child.stderr.on("data", (chunk) => {
+      for (const line of String(chunk).split("\n")) {
+        if (line.trim()) console.error(`${prefix} ${line}`);
+      }
+    });
 
-  children.push(child);
+    child.on("exit", (code) => {
+      console.log(`${prefix} exited with code ${code}`);
+      if (!settled) {
+        settled = true;
+        reject(new Error(`${service.name} exited with code ${code}`));
+      }
+    });
+
+    children.push(child);
+  });
+}
+
+for (const service of SERVICES) {
+  try {
+    await start(service);
+  } catch (error) {
+    console.error(`Could not start the ${service.name} database:`, error.message);
+    console.error("Is the port already in use? Stop the other process and retry.");
+    process.exit(1);
+  }
+  // A short pause keeps the filesystem happy between instances.
+  await new Promise((resolve) => setTimeout(resolve, 400));
 }
 
 console.log("");

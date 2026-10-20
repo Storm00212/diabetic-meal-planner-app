@@ -10,7 +10,7 @@
     "android": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --android",
     "ios": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --ios",
     "web": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --web",
-    "build": "expo export --platform web",
+    "build": "expo export --platform android",
     "lint": "eslint app src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('.expo',{recursive:true,force:true})\""
@@ -42,8 +42,8 @@
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
-    "@types/react": "^19.0.8",
+    "@types/react": "~19.2.4",
     "cross-env": "^10.0.0",
-    "typescript": "^5.7.3"
+    "typescript": "~6.0.3"
   }
 }

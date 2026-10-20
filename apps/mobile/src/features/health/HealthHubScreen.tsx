@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { Logo } from '@/shared/components/Logo';
+
 import { MedicalDisclaimer } from '@/shared/components/MedicalDisclaimer';
 import { WeightTracker } from './WeightTracker';
 import { AIChat } from './AIChat';

@@ -1,86 +1,82 @@
-# Session 1 — Backend Foundation: Setup Guide
+# Session 1 + Monorepo — Setup Guide
 
 Everything below is written for a **clean machine**. Follow the steps in order.
-Total time: about 25 minutes if you already have a GitHub account.
+Total time: about 30 minutes if you already have a GitHub account.
 
 ---
 
-## 0. What Session 1 delivered (so you know what you are looking at)
+## 0. What you have now
 
 | Area | Status |
 |---|---|
-| Route discovery fixed | Next.js now owns `src/app` (was invisible at `src/app_web`); Expo Router moved to `src/expo-app` |
-| Auth | Cookie sessions replaced with **JWT** access tokens (`src/lib/jwt.ts`, `src/lib/auth.ts`). `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
-| Schema | `users`, `dishes`, `meal_plans`, `meal_plan_items`, `weight_logs`, `payments` rewritten in `src/db/schema.ts` |
-| Kenyan data | 42 Kenyan dishes with KES prices, carbs, GI, calories (`src/lib/data/kenyan-dishes.json`) |
-| Personas | 5 demo users + 1 generic demo account (`src/lib/data/personas.json`) |
-| Planner | Carb-target and GI-limit aware, so the 5 personas get genuinely different plans (`src/lib/planner.ts`) |
-| Currency | USD → KES everywhere (`src/lib/format.ts`) |
-| Safety | "Planning aid, not medical advice" notice everywhere + "consult your clinician" banner for the critical persona |
-| Local database | Embedded Postgres (`npm run db:local`) so you need no local Postgres install |
-| Tests | `npm run smoke` — 45 end-to-end checks against a running server |
+| Monorepo | Turborepo: 2 frontends, 1 gateway, 4 services, 6 shared packages |
+| Databases | One per service (database-per-service), Prisma |
+| Auth | Stateless JWT, verified by every service, shared `JWT_SECRET` |
+| Kenyan data | 42 dishes with KSh prices, carbs, GI, calories |
+| Personas | 5 demo users + 1 generic demo account, all with different plans |
+| Planner | Carb-target and GI-limit aware — the 5 personas get 5 different plans |
+| Safety | "Planning aid, not medical advice" everywhere + a clinician banner for the critical persona |
+| Checks | `lint`, `typecheck`, `build` (13 workspaces) and `smoke` (45 cross-service checks) all pass |
 
-> **Note:** The web UI was **not** redesigned in this session, per your instruction.
-> Two cosmetic gaps are listed in §9.
+📖 **[docs/MONOREPO.md](MONOREPO.md)** — the file tree, the debugging setup and
+every root script.
+📖 **[docs/SERVICE-TEMPLATE.md](SERVICE-TEMPLATE.md)** — how to add a service.
 
 ---
 
-## 1. The hosting decision (read this before creating any accounts)
+## 1. The hosting decision
 
-### Postgres → **Neon Free** (recommended)
+### Postgres → **Neon Free** (one project, four branches)
 
-| Option | Expiry | Storage | Verdict |
-|---|---|---|---|
-| **Neon Free** | **Never expires** | 1 GB/project, 100 CU-hours/month/project, scale-to-zero after 5 min | ✅ **Use this** |
-| Render Free Postgres | **Expires 30 days after creation**, then deleted 14 days later | 1 GB | ❌ Judges' accounts would be wiped |
-| Supabase Free | No expiry, but the project is **paused after ~1 week of inactivity** and resumes on a delay | 500 MB | ⚠️ Workable, but a paused DB mid-demo is a bad look |
-| Aiven Free | Requires a card now | — | ❌ |
+| Option | Expiry | Verdict |
+|---|---|---|
+| **Neon Free** | **Never expires**, 1 GB/storage, 100 CU-hours/month/project, scale-to-zero after 5 min, **no credit card** | ✅ Use this |
+| Render Free Postgres | **Expires 30 days after creation**, then deleted 14 days later | ❌ The judges' accounts would vanish |
+| Supabase Free | No expiry, but the project **pauses after ~1 week of inactivity** | ⚠️ Workable, but a paused DB mid-demo is a bad look |
+| Aiven Free | Requires a card now | ❌ |
 
-Neon Free needs **no credit card**, never expires, and is a real Postgres. Your
-whole dataset (42 dishes, 6 users, plans) is well under 1 MB, so the 1 GB cap
-is irrelevant. 100 CU-hours/month is ~400 hours of active compute — a demo
-uses a rounding error of that.
+You need **four branches** in one Neon project (one per service): `auth`,
+`catalog`, `planner`, `health`. Each branch is a separate database with its
+own pooled and direct connection strings.
 
 ### Web app → **Render Free web service**
 
 - 0.1 CPU / 512 MB RAM
-- **Spins down after 15 minutes without traffic**, and takes **~1 minute to
-  wake up** on the next request
-- 750 free instance-hours per workspace per month (one service that never
-  sleeps uses ~744 of them — so you get **one** always-on service, not two)
-- 5 GB outbound bandwidth/month, 500 build minutes/month
-- Ephemeral filesystem, no SSH, no persistent disk
+- **Spins down after 15 minutes without traffic**, ~1 minute to wake
+- **750 free instance-hours per workspace per month**
 
-### ⚠️ Free-tier things that could bite you
+⚠️ **This is the one place the microservices split bites.** Five services as
+five Render services would need 5 × 744 = 3,720 hours, but the free tier only
+gives 750. So the repo ships **`npm run start:all`**: all five services run
+inside **one** container (separate processes, separate ports, separate
+databases) and the gateway proxies to them over localhost. One free instance,
+no cold-start chain, and the architecture is untouched.
 
-1. **Cold start.** If nobody hits the app for 15 minutes it sleeps. The next
-   visitor waits ~1 minute on a loading page. **Open the app 2 minutes before
-   you present**, or leave a keep-alive ping running (see §7 step 9).
-2. **One always-on service only.** 750 hours ÷ 744 hours = one. Do not create a
-   second Render service expecting it to stay awake.
-3. **Neon scale-to-zero.** After 5 minutes idle, Neon suspends compute and
-   resumes in a few hundred milliseconds. Invisible to users.
-4. **Neon storage 1 GB.** Fine for the demo. If you start storing logs or
-   images, check it.
+### Other free-tier things to watch
+
+1. **Cold start.** A free service sleeps after 15 minutes idle and takes ~1
+   minute to wake. Open the app 2 minutes before you present, or leave the
+   keep-alive loop running (§7 step 9).
+2. **Neon scale-to-zero** adds ~0.5 s to the first query after 5 minutes
+   idle. Invisible to users.
+3. **Neon storage 1 GB per branch.** Your data is well under 1 MB.
+4. **Prisma + pooled connections** need `?pgbouncer=true` on the runtime
+   URL, because the pooler is in transaction mode and Prisma cannot use
+   prepared statements through it. The schema already declares a separate
+   `directUrl` for schema operations.
 5. **M-Pesa Daraja sandbox** is free but shared and rate-limited. The
-   sandbox shortcode is a test number — the STK push will show up as a
-   prompt on the test MSISDN, and the callback only fires if the Daraja
-   account has that callback URL registered.
-6. **Expo Go** is free, but the Expo Go app only supports recent SDKs. If the
-   app refuses to load, update Expo Go on the phone.
+   callback URL must be registered on the Daraja account.
+6. **Expo Go** is free but only supports recent SDKs.
 
 ---
 
 ## 2. Prerequisites
 
-- **Node.js 22 LTS** (22.11 or newer). Check with `node -v`.
-  Next.js 16 needs Node ≥ 20.9; Expo SDK 57 needs Node ≥ 20. Node 22 is the
-  sweet spot for both.
+- **Node.js 22 LTS** (22.11 or newer). Next 16 needs ≥ 20.9; Expo SDK 57
+  needs ≥ 20. Node 22 is the sweet spot for both.
 - **Git**
-- A **GitHub** account (for Render to deploy from)
+- A **GitHub** account (Render deploys from it)
 - **Expo Go** on your phone (only needed from Session 3)
-
-Check your Node version:
 
 ```bash
 node -v      # must print v22.x
@@ -88,12 +84,13 @@ npm -v
 git --version
 ```
 
-If you have an older Node, install 22 LTS from <https://nodejs.org> (or with
-`nvm install 22`).
+> If `npm install` finishes suspiciously fast and `drizzle-kit` is missing,
+> your shell has `NODE_ENV=production` set. The repo ships a `.npmrc` with
+> `include=dev` that fixes this permanently.
 
 ---
 
-## 3. Get the code and install dependencies
+## 3. Get the code and install
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/diabetic-meal-planner-app.git
@@ -101,126 +98,73 @@ cd diabetic-meal-planner-app
 npm install
 ```
 
-> **If `npm install` finishes suspiciously fast and `drizzle-kit` is missing**,
-> your shell has `NODE_ENV=production` set. The repo ships a `.npmrc` with
-> `include=dev` that fixes this. If it still bites you, run
-> `npm install --include=dev`.
-
----
-
-## 4. Start a local Postgres (no install needed)
-
-> **You already have a hosted database.** Your `.env.local` now points at
-> Neon (`ep-summer-mouse-b4v2w9iz-pooler.c-6.us-east-2.aws.neon.tech`), the
-> schema is pushed and the 42 dishes + 6 accounts are seeded there. You can
-> skip straight to §5 and run `npm run dev`.
->
-> Use the embedded local Postgres below only if you want to work offline or
-> test without touching the shared Neon data.
-
-The repo embeds a real Postgres (PGlite over the Postgres wire protocol), so
-you do **not** need to install Postgres or Docker.
-
-**Terminal 1** — leave this running:
-
-```bash
-npm run db:local
-```
-
-You should see:
-
-```
-  Local Postgres is running.
-    host: 127.0.0.1
-    port: 5432
-    user: postgres
-    pass: postgres
-```
-
-**Terminal 2** — create the tables and load the Kenyan data:
+## 4. Configure
 
 ```bash
 cp .env.example .env.local
 ```
 
-Open `.env.local` and set:
+Open `.env.local`:
 
 ```dotenv
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
-JWT_SECRET=<paste a long random string>
-CORS_ORIGINS=http://localhost:3000,http://localhost:8081
-EXPO_PUBLIC_API_URL=http://localhost:3000
+DATABASE_URL=postgresql://neondb_owner:xxx@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=verify-full
+JWT_SECRET=<node -e "console.log(require('crypto').randomBytes(48).toString('base64'))">
+CORS_ORIGINS=http://localhost:5173,http://localhost:8081,*
 ```
 
-Generate a `JWT_SECRET` with:
+Then fan those values out to every workspace:
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+npm run env:sync
 ```
 
-Then create the schema and seed it:
+This writes `apps/svc-*/.env`, `apps/gateway/.env`, `apps/web/.env.local`
+and `apps/mobile/.env`. All of them are git-ignored.
+
+## 5. Run it locally
+
+You do **not** need to install Postgres. The repo embeds one per service.
+
+**Terminal 1** — the four local databases (leave running):
 
 ```bash
-npm run db:push     # creates tables
-npm run db:seed     # 42 Kenyan dishes + 6 demo accounts
+npm run db:local
 ```
 
-`db:push`, `db:seed` and `db:generate` all read `.env.local` automatically —
-you do not need to export `DATABASE_URL` by hand. If you *do* export it in
-your shell, that value wins.
-
-You should see:
-
 ```
-GlucoPlate seed complete.
-  Kenyan dishes added this run : 42
-  Users seeded                : 6
+  Local Postgres is running — one database per service.
+    auth     postgresql://postgres:postgres@127.0.0.1:5432/postgres
+    catalog  postgresql://postgres:postgres@127.0.0.1:5433/postgres
+    planner  postgresql://postgres:postgres@127.0.0.1:5434/postgres
+    health   postgresql://postgres:postgres@127.0.0.1:5435/postgres
 ```
 
----
-
-## 5. Run the web app
-
-Still in **Terminal 2**:
+**Terminal 2** — create the schemas, load the data, start everything:
 
 ```bash
+npm run db:generate
+npm run db:push
+npm run db:seed
 npm run dev
 ```
 
-Open <http://localhost:3000>. You should land on the login screen.
+`npm run dev` starts the gateway, the four services and the web app. Open
+**<http://localhost:5173>**.
 
-- Click **“✨ Explore the demo account”** → signs you in as `demo@glucoplate.app`.
-- Or sign in as one of the personas (see §7).
+> Vite binds to `localhost` (IPv6) on Windows — `http://localhost:5173`
+> works, `http://127.0.0.1:5173` may not.
 
----
+## 6. Check it
 
-## 6. Run the test suite (proves the backend works)
+In a third terminal:
 
-**Where to run it:** in the **project root** — the folder that contains
-`package.json`, i.e. `C:\Users\User\Desktop\projects\diabetic-meal-planner-app`
-on your machine. Do **not** run it from `scripts/` or `src/`.
-
-**What it needs:** a running server. Two options:
-
-| Target | Command | When to use |
-|---|---|---|
-| Local dev server | `npm run dev` in one terminal → `npm run smoke` in another | Everyday development |
-| Your deployed app | `npm run smoke -- https://glucoplate.onrender.com` | Checking the Render deployment |
-
-`npm run smoke` talks to `http://127.0.0.1:3000` by default, so start
-`npm run dev` first (or pass a URL as shown above). It never writes to your
-database except for one throwaway account it registers and cleans up around.
-
-Expected output ends with:
-
-```
-All checks passed.
+```bash
+npm run smoke
 ```
 
-(45 checks — register, login, `/api/auth/me`, the 42-dish catalogue, budget
-and GI limits for all five personas, the clinician banner, and CORS.)
-
-Then, in the same terminal:
+Expected: **`All checks passed.`** (45 checks: every service's health, the
+gateway routing table, register/login/me, the 42-dish catalogue, the five
+personas' plans, the clinician banner, CORS and request tracing).
 
 ```bash
 npm run lint        # must print nothing
@@ -228,192 +172,217 @@ npm run typecheck   # must print nothing
 npm run build       # must succeed
 ```
 
----
-
 ## 7. Demo script for the judges
 
-Open <http://localhost:3000/login> and use these accounts. **All five persona
-accounts use the password `Gluco@2026`.**
+Open <http://localhost:5173/login>. **All five persona accounts use the
+password `Gluco@2026`.**
 
-| Persona | Email | Setting | Diabetes level | Daily budget | Carb cap | GI cap | What to show |
-|---|---|---|---|---|---|---|---|
-| Njeri Wanjiru, 22 | `njeri@glucoplate.app` | Student | Healthy | KSh 200 | 210 g | 55 | The widest limits: oats, githeri, muthamaki |
-| Brian Oduya, 9 | `brian@glucoplate.app` | Child | Prediabetes | KSh 150 | 150 g | 50 | Uji, lentil soup, boiled lentils |
-| Peter Mwangi, 41 | `peter@glucoplate.app` | Working class | Type 2 controlled | KSh 350 | 180 g | 55 | The richest plan: nyama choma appears |
-| Grace Wanjiku, 68 | `grace@glucoplate.app` | Elderly | Type 2 high risk | KSh 250 | 120 g | 50 | Tighter carb cap, **clinician banner appears** |
-| Josephine Nyambura, 35 | `josephine@glucoplate.app` | Rural farmer | **Critical** | KSh 120 | 100 g | 45 | Tightest limits + **red “Talk to your clinician first” banner** |
-| Demo Patient | `demo@glucoplate.app` | Working class | Type 2 controlled | KSh 300 | 180 g | 55 | The one-click button on the login page (password `demo123`) |
+| Persona | Email | Setting | Diabetes | Budget | Carb cap | GI cap |
+|---|---|---|---|---|---|---|
+| Njeri Wanjiru, 22 | `njeri@glucoplate.app` | Student | Healthy | KSh 200 | 210 g | 55 |
+| Brian Oduya, 9 | `brian@glucoplate.app` | Child | Prediabetes | KSh 150 | 150 g | 50 |
+| Peter Mwangi, 41 | `peter@glucoplate.app` | Working class | Type 2 controlled | KSh 350 | 180 g | 55 |
+| Grace Wanjiku, 68 | `grace@glucoplate.app` | Elderly | Type 2 high risk | KSh 250 | 120 g | 50 |
+| Josephine Nyambura, 35 | `josephine@glucoplate.app` | Rural farmer | **Critical** | KSh 120 | 100 g | 45 |
+| Demo Patient | `demo@glucoplate.app` | Working class | Type 2 controlled | KSh 300 | 180 g | 55 |
 
-**The single best demo moment:** sign in as `njeri@glucoplate.app`, open the
-Meal Planner, note the plan and the total. Then sign in as
-`josephine@glucoplate.app` — same 42-dish catalogue, completely different
-plan, a tighter budget, a tighter GI ceiling, and a red clinician banner at
-the top of the screen. That is the whole product thesis in 30 seconds.
+(`demo@` uses the password `demo123` — it is the one-click button.)
+
+**The best 30 seconds of the demo:** sign in as `njeri@` and open the Meal
+Planner. Note the plan and the total. Then sign in as `josephine@` — the same
+42-dish catalogue, a completely different plan, a tighter budget, a tighter GI
+ceiling, and a red **"Talk to your clinician first"** banner at the top of the
+screen. That is the whole product thesis.
 
 Other things to try:
-- **My Bucket** shows all 42 Kenyan dishes with KSh prices and GI badges.
-- **Settings → Health Profile** shows the diabetes type and allergies.
+- **My Bucket** — all 42 Kenyan dishes with KSh prices and GI badges.
+- **Analytics** — carb trends and the GI distribution of what you actually ate.
 - Register a brand-new account on the spot — it gets the shared catalogue and
-  its own default limits. (Judges can create their own accounts.)
+  its own default limits.
+- Say the request id out loud: open the browser console with
+  `VITE_DEBUG_API=true` and every request prints its id, which is the same id
+  in every service's log. That is the "trace it across the system" story.
 
 ---
 
 ## 8. Deploy to the internet (free)
 
-### 8a. Create the Neon database
+### 8a. Four Neon branches
 
-1. Go to <https://neon.com> → **Sign up** (GitHub or Google, no card needed).
-2. **Create a project** → name it `glucoplate`.
-3. **Region:** pick the closest to Kenya — *AWS Europe (Frankfurt)* or
-   *AWS Europe (Ireland)*.
-4. Neon gives you a **branch** (`main`). Open **Connection Details** and
-   copy the **Pooled connection string** (it ends in `-pooler` and looks like
-   `postgresql://USER:PASSWORD@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require`).
-5. Keep that string — you need it in three places.
+1. <https://neon.com> → sign up (no card) → create a project `glucoplate`.
+2. Region: **AWS Europe (Frankfurt)** or **Ireland** — closest to Kenya.
+3. Create four branches: `auth`, `catalog`, `planner`, `health`. Each needs
+   its own branch so each service gets its own database.
+4. For each branch, copy the **pooled** connection string. It ends in
+   `-pooler`. Change `sslmode=require` to `sslmode=verify-full` (identical
+   verified TLS, but it silences a warning on every start). Add
+   `&pgbouncer=true` — Prisma needs it through a transaction-mode pooler.
+5. Also copy the **direct** connection string for each branch (it does not
+   end in `-pooler`) — that is `DIRECT_DATABASE_URL`.
 
-> **Tip:** change `sslmode=require` to `sslmode=verify-full` in the URL. It
-> is the same verified TLS connection, but it silences a harmless
-> "SSL modes 'require' are treated as aliases for 'verify-full'" warning that
-> node-postgres prints on every start. The `channel_binding=require` part can
-> stay as Neon gave it to you.
->
-> **Your own Neon project is already created and seeded** — you can skip
-> 8a/8b and go straight to 8c.
+### 8b. Create the schemas and seed the hosted databases
 
-### 8b. Push the schema and seed the hosted database
-
-From your machine, in the project folder, with the Neon URL in your shell:
+For each of the four branches:
 
 ```bash
 # macOS / Linux
-DATABASE_URL="postgresql://USER:PASSWORD@ep-xxx-pooler.../neondb?sslmode=require" npm run db:push
+export DATABASE_URL="postgresql://...@ep-auth-pooler.../neondb?sslmode=verify-full&pgbouncer=true"
+export DIRECT_DATABASE_URL="postgresql://...@ep-auth.../neondb?sslmode=verify-full"
+npm run db:push --workspace=@glucoplate/svc-auth
+npm run db:seed --workspace=@glucoplate/svc-auth
+```
 
+```powershell
 # Windows PowerShell
-$env:DATABASE_URL="postgresql://USER:PASSWORD@ep-xxx-pooler.../neondb?sslmode=require"; npm run db:push
+$env:DATABASE_URL="postgresql://...@ep-auth-pooler.../neondb?sslmode=verify-full&pgbouncer=true"
+$env:DIRECT_DATABASE_URL="postgresql://...@ep-auth.../neondb?sslmode=verify-full"
+npm run db:push --workspace=@glucoplate/svc-auth
+npm run db:seed --workspace=@glucoplate/svc-auth
 ```
 
-Then the same with `npm run db:seed`. Verify:
+Repeat for `svc-catalog`, `svc-planner`, `svc-health`.
 
-```bash
-# macOS / Linux
-DATABASE_URL="..." npm run smoke   # point at your Render URL later; for now skip
-```
+> The `svc-planner` seed needs to know the user ids that `svc-auth` created.
+> It assumes the personas are ids 1..6 in `PERSONAS` order and logs a
+> warning saying so. If `svc-auth` was seeded on a fresh database that is
+> correct. Otherwise pass `SEED_USER_IDS` as a JSON map of email → id.
 
 ### 8c. Create the Render web service
 
-1. Go to <https://render.com> → **Sign up** with the same GitHub account.
-2. **New → Web Service** → connect the repository.
+1. <https://render.com> → sign up with the same GitHub account.
+2. **New → Web Service** → connect the repository. Or use the
+   `render.yaml` blueprint in the repo root.
 3. Settings:
 
    | Field | Value |
    |---|---|
    | Name | `glucoplate` |
-   | Region | Frankfurt (same as your Neon region) |
-   | Branch | `main` |
-   | Root Directory | *(blank)* |
+   | Region | Frankfurt |
    | Runtime | Node |
    | Build Command | `npm install --include=dev && npm run build` |
-   | Start Command | `npm start` |
+   | Start Command | **`npm run start:all`** |
    | Instance Type | **Free** |
    | Health Check Path | `/api/health` |
 
-4. **Environment** → add:
+   `npm run start:all` runs the gateway and the four services in one
+   container. The gateway binds Render's `$PORT`; the services stay on
+   4001–4004 inside the container and the gateway proxies to them.
+
+4. **Environment**:
 
    ```
-   DATABASE_URL = <the Neon pooled connection string>
-   JWT_SECRET   = <the same long random string you used locally>
-   NODE_VERSION = 22.23.1
-   CORS_ORIGINS = https://glucoplate.onrender.com
+   NODE_VERSION   = 22.23.1
+   NODE_ENV       = production
+   JWT_SECRET     = <the same long random string>
+   LOG_LEVEL      = info
+   CORS_ORIGINS   = https://glucoplate.onrender.com
+   SVC_AUTH_URL     = http://127.0.0.1:4001
+   SVC_CATALOG_URL  = http://127.0.0.1:4002
+   SVC_PLANNER_URL  = http://127.0.0.1:4003
+   SVC_HEALTH_URL   = http://127.0.0.1:4004
+   DATABASE_URL        = <the AUTH branch's pooled URL + ?pgbouncer=true>
+   DIRECT_DATABASE_URL = <the AUTH branch's direct URL>
    ```
 
-5. **Create Web Service**. The first deploy takes ~3–5 minutes. Watch the logs
-   for `✓ Compiled successfully`.
-6. When it goes green you get a URL like `https://glucoplate.onrender.com`.
-7. Visit `https://glucoplate.onrender.com/api/health` — you should see
-   `{"ok":true,"database":"connected"}`.
+   > One container, one `DATABASE_URL` pair — but there are four databases.
+   > The other three services read their own `DATABASE_URL` from their own
+   > `.env`, which is **not** in the container. Two ways forward:
+   >
+   > - **Recommended:** give each service its own `DATABASE_URL` by giving
+   >   each service its own `PORT`-scoped env file inside the image, or
+   > - Use **one Neon branch per service** and add a `DATABASE_URL_<SERVICE>`
+   >   variable per service, then have `scripts/sync-env.mjs` (or the
+   >   container's start script) write the per-service `.env` at boot.
+   >
+   > The start script already loads each service's own `.env` **before** the
+   > root one, so the simplest fix is to write the four `.env` files into the
+   > image at build time from four environment variables:
+   >
+   > ```
+   > AUTH_DATABASE_URL=...     CATALOG_DATABASE_URL=...
+   > PLANNER_DATABASE_URL=...  HEALTH_DATABASE_URL=...
+   > ```
+   >
+   > then in the build step:
+   >
+   > ```bash
+   > npm run env:sync   # writes apps/svc-*/.env from AUTH_/CATALOG_/... variables
+   > ```
+   >
+   > `scripts/sync-env.mjs` already reads `AUTH_DATABASE_URL`,
+   > `CATALOG_DATABASE_URL`, `PLANNER_DATABASE_URL` and
+   > `HEALTH_DATABASE_URL`. Add those four to Render's environment and add
+   > `npm run env:sync` to the build command.
 
-> **If the build fails with `DATABASE_URL is required`**, add `DATABASE_URL` to
-> Render's environment variables (build and runtime share the same list) and
-> redeploy.
+5. The first deploy takes ~3–5 minutes. Watch for `✓ Compiled successfully`.
+6. `https://glucoplate.onrender.com/api/health` should return
+   `{"ok":true,"service":"gateway","upstream":{...all true...}}`.
+7. Check the deployed stack end to end:
+   ```bash
+   npm run smoke -- https://glucoplate.onrender.com
+   ```
 
-### 8d. Point the mobile app at the deployed API (Session 3)
+### 8d. Point the mobile app at the deployed gateway
 
 ```bash
-EXPO_PUBLIC_API_URL=https://glucoplate.onrender.com npm run mobile
+EXPO_PUBLIC_API_URL=https://glucoplate.onrender.com npm run dev:mobile
 ```
 
----
-
-## 9. Known gaps left for later sessions
-
-| Gap | Session | Note |
-|---|---|---|
-| Web UI still shows some `$` labels next to KES amounts | 2 | `money()` already renders `KSh`; the remaining hard-coded labels are in the settings/overview screens |
-| `nativewind` is installed but the Expo Babel plugin and Tailwind RN config are not wired up yet | 3 | Mobile screens will render unstyled until this is done |
-| M-Pesa STK push not built | 5 | The `payments` table and all the env var names already exist |
-| No rate limiting on login/register | 6 | Fine for a demo; add it before real users |
-
----
-
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| `npm run db:local` says the port is in use | Another Postgres is running. Stop it, or use a different port: `set LOCAL_PG_PORT=5433` (Windows) / `LOCAL_PG_PORT=5433 npm run db:local` (mac/Linux) |
-| `npm run db:push` cannot connect | `npm run db:local` is not running in the other terminal |
-| `getCurrentUser` returns nothing / redirect loop | `JWT_SECRET` changed after the cookie was issued — sign in again |
-| `DATABASE_URL is not configured` | `.env.local` is missing or the app was started before you created it — restart `npm run dev` |
-| Neon says `too many connections` | You are using the **direct** URL instead of the **pooled** one. Copy the `-pooler` connection string |
-| Render shows a 1-minute loading page | Cold start. Hit the URL again, or keep it warm (below) |
-| Build fails on Render: `Cannot find module 'drizzle-kit'` | Change the build command to `npm install --include=dev && npm run build` |
+| `npm run db:local` says the port is in use | Another Postgres is running. Stop it, or `npm run db:local:reset` first. |
+| `db:push` cannot connect | `npm run db:local` is not running, or you are pointing at the wrong branch. |
+| A service returns 401 for a token that svc-auth just minted | The `JWT_SECRET` differs between the services. Run `npm run env:sync` so they all share the root `.env.local` value, then restart the services. |
+| `PrismaClientInitializationError: prepared statement s0 already exists` | The runtime URL is missing `?pgbouncer=true`. |
+| The gateway returns 502 for one path | That upstream is down. `GET /api/health` shows which one. |
+| Render shows a 1-minute loading page | Cold start. Hit the URL again, or keep it warm (below). |
+| `npm install` removes `drizzle-kit`/`eslint` | `NODE_ENV=production` is set. The repo's `.npmrc` (`include=dev`) prevents this. |
+| The mobile app cannot reach the API | A physical device needs your computer's LAN IP, not `localhost`. Set `EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:5173`… actually the *gateway's* port: `http://<your-LAN-IP>:4000`. |
 
 ### Keeping the demo warm (optional)
 
 A free Render service sleeps after 15 minutes idle. If you want it always
-awake, run this in a separate terminal on the machine that will present:
+awake, run this on the machine that will present:
 
 ```bash
-# macOS / Linux
 while true; do curl -s -o /dev/null https://glucoplate.onrender.com/api/health; sleep 600; done
 ```
 
-This uses ~744 of your 750 free instance-hours for the month, so **only do
-this if Render is hosting just this one service**.
+That uses ~744 of the 750 free instance-hours for the month.
 
 ---
 
-## 11. What to send me next (Session 2)
+## 10. What to send me next (Session 2)
 
 Reply with one short message containing:
 
 1. **Confirmation the local steps worked** — paste the output of
-   `npm run smoke` (should end with `All checks passed.`), or the error if
-   it did not.
-2. **Your Neon URL and Render URL**, or a screenshot of the Neon connection
-   details with the password hidden if you want me to write the deploy steps
-   for you specifically.
-3. **Any environment problems** — e.g. `npm run db:local` failed on your
-   machine, or you are on an older Node.
+   `npm run smoke` (should end with `All checks passed.`), or the error.
+2. **Your four Neon branch URLs and your Render URL** (hide the passwords), or
+   a screenshot of the Neon branch settings with the passwords hidden.
+3. **Any environment problems** — e.g. `npm run db:local` failed, or you are
+   on an older Node.
 
-### Proposed Session 2 agenda (most valuable next)
+### Proposed Session 2 agenda
 
-> **The Kenyan dish catalogue + planner quality.**
+> **The Kenyan dish catalogue and the planner's reasoning.**
 >
-> - Expand the catalogue from 42 to ~80–100 dishes with per-county coverage
+> - Grow the catalogue from 42 to ~80–100 dishes with per-county coverage
 >   (Luo, Kikuyu, Luhya, Swahili, Kalenjin, Coastal, Maasai, Meru) and
->   accurate per-serving nutrition, sourced from published Kenyan
->   composition tables rather than estimates.
-> - Add *serving multiples* (a "2 chapati" serving) and a per-person portion
->   calculator driven by the persona's age, sex and activity level.
-> - Add a **"why this dish"** explanation to each plan line (cost vs. budget,
->   GI vs. limit, carbs vs. cap) — this is the single most persuasive thing
+>   accurate per-serving nutrition taken from published Kenyan composition
+>   tables rather than estimates.
+> - Add serving multiples ("2 chapati") and a portion calculator driven by
+>   the persona's age, sex and activity level.
+> - Add a **"why this dish"** line to every plan entry — cost vs. budget,
+>   GI vs. limit, carbs vs. cap. This is the single most persuasive thing
 >   for a judging panel.
-> - Replace the hard-coded `$` labels in the web UI with `KSh`.
-> - Add a **swap** action: "give me an equally cheap but lower-GI version of
->   this meal".
+> - A **swap** action: "give me an equally cheap but lower-GI version".
+> - Finish the web UI polish (the remaining hard-coded `$` labels).
 >
-> This is Session 2 because it is what a judge looks at first and it needs no
-> new accounts, no new services and no M-Pesa work.
+> It needs no new accounts, no new services and no M-Pesa work, and it is
+> what a judge looks at first.
 
 ---
 
@@ -421,20 +390,17 @@ Reply with one short message containing:
 
 | Path | What it is |
 |---|---|
-| `src/app/` | Next.js web app + JSON API (App Router) |
-| `src/app/api/` | All API route handlers |
-| `src/expo-app/` | Expo Router mobile app |
-| `src/lib/jwt.ts` | JWT sign/verify |
-| `src/lib/auth.ts` | Password hashing, token issuing, current-user lookup |
-| `src/lib/planner.ts` | The meal-plan algorithm |
-| `src/lib/budget.ts` | Period budget → daily allowance |
-| `src/lib/medical.ts` | Disclaimer text, diabetes-level metadata, clinician banner rules |
-| `src/lib/seed.ts` | Shared-catalogue access + on-demand seeding |
-| `src/lib/data/kenyan-dishes.json` | The 42 Kenyan dishes (single source of truth) |
-| `src/lib/data/personas.json` | The 5 personas + demo account |
-| `src/db/schema.ts` | Drizzle schema (6 tables) |
-| `drizzle.config.ts` | Drizzle Kit config (reads `DATABASE_URL`) |
-| `drizzle/0000_session1_foundation.sql` | The migration |
-| `scripts/seed.mjs` | Seeder (idempotent) |
-| `scripts/smoke.mjs` | End-to-end API test |
-| `src/proxy.ts` | CORS headers for `/api/*` |
+| `apps/web/src/features/` | the web screens, one folder per domain |
+| `apps/mobile/src/features/` | the mobile screens, one folder per domain |
+| `apps/gateway/src/routes.ts` | the routing table |
+| `apps/svc-*/prisma/schema.prisma` | that service's database, and nothing else |
+| `apps/svc-*/src/modules/` | that service's feature modules |
+| `packages/types/src/index.ts` | the API contract and `SERVICE_PORTS` |
+| `packages/domain/src/index.ts` | the planner, budget rules and safety copy |
+| `packages/data/src/` | the 42 dishes and the 5 personas |
+| `packages/api-client/src/` | the typed clients and the request tracing |
+| `scripts/local-postgres.mjs` | the four local databases |
+| `scripts/sync-env.mjs` | fans `.env.local` out to every workspace |
+| `scripts/start-all.mjs` | all five services in one container |
+| `scripts/smoke.mjs` | the cross-service end-to-end test |
+| `render.yaml` | the Render blueprint |

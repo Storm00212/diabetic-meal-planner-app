@@ -1,23 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Modal,
-  Alert
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from "react-native";
 import { Sparkles } from 'lucide-react-native';
 import type { Dish, DishFormValues } from '@glucoplate/types';
-import { money } from '@glucoplate/domain';
 
-const MEAL_OPTIONS = [
-  { value: "morning", label: "Morning" },
-  { value: "afternoon", label: "Afternoon" },
-  { value: "evening", label: "Evening" },
-  { value: "any", label: "Any time" },
-];
 
 const empty: DishFormValues = {
   name: "",
@@ -91,7 +76,7 @@ export default function DishModal({
         proteinG: data.proteinG,
         glycemicIndex: data.glycemicIndex,
       }));
-    } catch (err) {
+    } catch {
       setError("Could not automatically find nutrients. Please enter them manually.");
     } finally {
       setFetchingNutrients(false);

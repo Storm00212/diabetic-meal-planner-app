@@ -8,32 +8,44 @@
 >
 > **Review date:** 2026-10-09
 >
-> **Update:** 2026-10-20 — Session 1 (backend foundation) implemented. See
-> §0 below for what this document's findings led to.
+> **Update:** 2026-10-20 — Sessions 1 and 2 implemented: the backend
+> foundation and the Turborepo monorepo reorganisation. §0 below records what
+> this document's findings led to, and
+> [docs/MONOREPO.md](docs/MONOREPO.md) describes the architecture that
+> exists now.
 
 ---
 
-## 0. Session 1 status: findings from this audit that are now resolved
+## 0. Status: findings from this audit that are now resolved
 
-This document was written as a pre-implementation audit. Session 1 addressed
-the structural and identity problems it identified. The rest of the document
-is still accurate as a description of the *intended* target architecture.
+This document was written as a pre-implementation audit. It drove the work;
+the rest of the document is still accurate as a description of the *intended*
+target architecture, and the target is now the **Turborepo monorepo** in
+[docs/MONOREPO.md](docs/MONOREPO.md).
 
-| Audit finding (§9) | Session 1 outcome |
+| Audit finding (§9) | Outcome |
 |---|---|
-| **2. Resolve route discovery** — Next.js did not see `src/app_web`; Expo owned the root `app/` | **Fixed.** Expo Router moved to `src/expo-app` (`EXPO_ROUTER_APP_ROOT=src/expo-app`); Next.js now owns `src/app`. All 29 routes build and serve. The `middleware` convention was also migrated to Next 16's `src/proxy.ts`. |
-| **3. Choose an authentication contract** — hard-coded mock user, cookie-only, mobile had no token | **Fixed.** Stateless JWT access tokens (`src/lib/jwt.ts`, `jose`/HS256, 7-day expiry). `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`. The web app mirrors the token into an httpOnly cookie; the Expo app sends `Authorization: Bearer`. Passwords hashed with scrypt and compared in constant time. |
-| **4. Define a stable HTTP contract** — `apiFetch` returned a `Response` while screens treated it as parsed JSON; the chat client sent `message`/expected `content` | **Fixed.** `apiFetch` returns a `Response`; `apiJson` returns parsed JSON. The chat endpoint now accepts `query` and returns `answer`. `/api/health` reports real database state instead of pretending. |
+| **2. Resolve route discovery** | **Fixed, twice over.** The Next.js app was invisible to Next itself (Expo owned the root `app/`). The whole app is now a monorepo where each client has an unambiguous root: `apps/web` (Vite), `apps/mobile` (Expo Router in `app/`), and the API lives in `apps/svc-*` behind `apps/gateway`. |
+| **3. Choose an authentication contract** | **Fixed.** Stateless JWT access tokens (HS256, 7-day expiry) minted by `svc-auth` and verified by every service with a shared `JWT_SECRET`. `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`. The web app mirrors the token into an httpOnly cookie; the Expo app stores it in SecureStore and sends `Authorization: Bearer`. Passwords hashed with scrypt and compared in constant time. |
+| **4. Define a stable HTTP contract** | **Fixed.** The contract lives in `packages/types` and both clients use the same typed client from `packages/api-client`. `apiFetch` returns a `Response`, `apiJson` returns the parsed body, and the chat endpoint accepts `query` and returns `answer`. `/api/health` reports real database state instead of pretending. |
 | **5. Make identity and ownership consistent** | **Partially fixed.** Every protected route resolves the caller through `getCurrentUser()`. Ownership checks remain per-route and still need the repository-boundary treatment described in §6.4. |
-| **7. Define plan-history semantics** — editing or deleting a dish rewrote history | **Fixed.** `meal_plan_items` now snapshots `dish_name`, `planned_cost`, `carbs_g`, `calories` and `glycemic_index` at plan time. Analytics read the snapshot. |
-| **8. Separate demo mode from normal operation** — GET routes returned another person's sample data | **Fixed.** `/api/plans` returns an empty list for a new account; mock data is only returned when the database itself is unreachable. |
-| **9. Reproducible tooling** — no lockfile, NativeWind missing | **Fixed.** The lockfile is tracked, `nativewind` and its Tailwind v4 peer are installed, `drizzle-kit` and `eslint` are installed, and `.npmrc` sets `include=dev` so `NODE_ENV=production` shells do not prune devDependencies. |
+| **6. Create the service boundary** | **Fixed, and then some.** The single Next.js app became five independent Express services with their own `prisma/` directories, their own explicit ports and their own databases, fronted by a gateway. |
+| **7. Define plan-history semantics** | **Fixed.** `meal_plan_items` snapshots `dish_name`, `planned_cost`, `carbs_g`, `calories` and `glycemic_index` at plan time. Analytics read the snapshot. |
+| **8. Separate demo mode from normal operation** | **Fixed.** The mock data is gone from the API; a new account gets an empty list, not somebody else's sample plans. |
+| **9. Reproducible tooling** | **Fixed.** The lockfile is tracked, the toolchain is one root `package.json` plus `turbo.json`, and `.npmrc` (`include=dev`) survives a `NODE_ENV=production` shell. |
 
-### Additions Session 1 made that this document did not anticipate
+### Additions the work made that this document did not anticipate
 
-- **Payments table** — `payments` (M-Pesa STK push fields) added to the schema
-  ahead of the Session 5 integration.
-- **Diabetes severity ladder** — `users.diabetes_level`
+- **Database-per-service** with an explicit `prisma/` directory per service,
+  each with its own `output` folder so one service can never clobber
+  another's generated client.
+- **The gateway** gives both clients a single base URL and makes a request
+  traceable across every service through one `x-request-id`.
+- **A shared `packages/domain`** so the planner, budget rules and safety
+  copy are used by the services *and* the clients, not copied.
+- **Payments** — the M-Pesa STK push table and the environment variable
+  names are in place ahead of the integration.
+- **Diabetes severity ladder** — `diabetes_level`
   (`healthy` → `prediabetes` → `type2_controlled` → `type2_high_risk` →
   `critical`) with per-level carbohydrate and glycemic index ceilings, plus
   `needs_clinician_review`.
@@ -41,7 +53,7 @@ is still accurate as a description of the *intended* target architecture.
   visible to every account; user-added dishes are private. This is what lets
   the five personas differ without duplicating data.
 - **Budget semantics** — `budget_amount` is the total for `budget_period`;
-  the planner's daily allowance is derived from it (`src/lib/budget.ts`).
+  the planner's daily allowance is derived from it (`packages/domain`).
 - **Cost discipline** — currency is KES everywhere.
 
 ---

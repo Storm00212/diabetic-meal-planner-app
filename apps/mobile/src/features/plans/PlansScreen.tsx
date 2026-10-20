@@ -39,7 +39,7 @@ export default function PlansScreen() {
       try {
         const data = await apiJson('/api/plans');
         if (!cancelled) setPlans(data.plans ?? []);
-      } catch (err) {
+      } catch {
         if (!cancelled) showToast("Failed to load plans");
       } finally {
         if (!cancelled) setLoading(false);

@@ -47,7 +47,7 @@ export default function DishesScreen() {
       try {
         const data = await apiJson('/api/dishes');
         if (!cancelled) setDishes(data.dishes ?? []);
-      } catch (err) {
+      } catch {
         if (!cancelled) showToast("Failed to load dishes");
       } finally {
         if (!cancelled) setLoading(false);

@@ -1,14 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  SafeAreaView,
-  ActivityIndicator,
-  Alert
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, SafeAreaView } from "react-native";
 import { useRouter } from 'expo-router';
 import { money } from '@glucoplate/domain';
 import { giBand } from '@glucoplate/domain';

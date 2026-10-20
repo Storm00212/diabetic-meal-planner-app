@@ -1,0 +1,61 @@
+# GlucoPlate on Render — one free web service for the whole backend.
+#
+# The monorepo has five services, each with its own port and its own
+# database. Render's free tier allows 750 instance-hours per workspace per
+# month, which is only enough for ONE always-on service. So all five run
+# inside a single container (see scripts/start-all.mjs) and the gateway
+# proxies to the others over localhost.
+#
+#   1. Create the databases (four Neon branches) and fill in the env vars.
+#   2. Push this blueprint, or create a Web Service by hand:
+#        Build command : npm install --include=dev && npm run build
+#        Start command : npm run start:all
+#        Health path   : /api/health
+#   3. Run the migrations against each database:
+#        DATABASE_URL=<each database> npm run db:push
+#        DATABASE_URL=<each database> npm run db:seed
+
+services:
+  - type: web
+    name: glucoplate
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start:all
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.1
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      # One pair per service. The pooled URL needs ?pgbouncer=true.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      - key: SVC_AUTH_URL
+        value: http://127.0.0.1:4001
+      - key: SVC_CATALOG_URL
+        value: http://127.0.0.1:4002
+      - key: SVC_PLANNER_URL
+        value: http://127.0.0.1:4003
+      - key: SVC_HEALTH_URL
+        value: http://127.0.0.1:4004
+      # M-Pesa Daraja SANDBOX (Session 5)
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        value: "174379"
+      - key: MPESA_ENV
+        value: sandbox

@@ -1,8 +1,10 @@
 node_modules/
+.turbo/
 .expo/
 .next/
 out/
-.turbo/
+dist/
+
 # Local embedded Postgres data (npm run db:local)
 .pgdata/
 
@@ -12,10 +14,16 @@ out/
 .env.*.local
 !.env.example
 
-# package-lock.json is intentionally tracked so that Render builds are
-# reproducible.
-tsconfig.tsbuildinfo
+# Per-workspace environment files, written by `npm run env:sync`.
+apps/*/.env
+apps/*/.env.local
 
-# Prisma clients generated per service
+# Prisma clients, generated per service so they cannot clobber each other.
 apps/*/generated/
 
+# Build caches
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# package-lock.json is intentionally tracked so that Render builds are
+# reproducible.
