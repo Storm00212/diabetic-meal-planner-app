@@ -1,24 +1,16 @@
-import {
-  createGlucoPlateApi,
-  resolveServiceUrls,
-  type GlucoPlateApi,
-} from "@glucoplate/api-client";
+import { createGlucoPlateApi, resolveApiUrl } from "@glucoplate/api-client";
 
 /**
- * The single API client for the whole web app.
+ * The one API client for the whole web app.
  *
- * Every feature imports this instance rather than constructing its own, so
- * the base URL, the auth token and the debug switch live in one place.
+ * There is a single Backend API, so the app needs a single base URL. It comes
+ * from `VITE_API_URL` and is baked into the bundle at build time.
  */
 
 const TOKEN_STORAGE_KEY = "glucoplate.token";
 
-export const serviceUrls = resolveServiceUrls({
+export const apiUrl = resolveApiUrl({
   VITE_API_URL: import.meta.env.VITE_API_URL,
-  VITE_SVC_AUTH_URL: import.meta.env.VITE_SVC_AUTH_URL,
-  VITE_SVC_CATALOG_URL: import.meta.env.VITE_SVC_CATALOG_URL,
-  VITE_SVC_PLANNER_URL: import.meta.env.VITE_SVC_PLANNER_URL,
-  VITE_SVC_HEALTH_URL: import.meta.env.VITE_SVC_HEALTH_URL,
 });
 
 export const debugEnabled = import.meta.env.VITE_DEBUG_API === "true";
@@ -47,9 +39,9 @@ export function clearToken(): void {
   }
 }
 
-export const api: GlucoPlateApi = createGlucoPlateApi({
-  service: "gateway",
-  baseUrl: serviceUrls.gateway,
+export const api = createGlucoPlateApi({
+  service: "api",
+  baseUrl: apiUrl,
   getToken: readToken,
   debug: debugEnabled,
   clientName: "web",
