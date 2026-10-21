@@ -26,16 +26,20 @@
     "test": "turbo run test",
     "clean": "turbo run clean",
     "db:generate": "turbo run db:generate",
-    "db:push": "turbo run db:push",
+    "db:schema": "node scripts/build-db-schema.mjs",
+    "db:push": "node scripts/db-push.mjs",
     "db:seed": "turbo run db:seed",
     "db:local": "node scripts/local-postgres.mjs",
     "db:local:reset": "node scripts/local-postgres.mjs --reset",
     "smoke": "node scripts/smoke.mjs",
     "audit": "node scripts/audit-endpoints.mjs",
     "test:swap": "node scripts/test-swap.mjs",
-    "setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed",
+    "test:clients": "node scripts/test-clients.mjs",
+    "setup": "npm install && npm run env:sync && npm run db:generate && npm run db:push && npm run db:seed",
     "env:sync": "node scripts/sync-env.mjs",
-    "start:all": "node scripts/start-all.mjs"
+    "start:all": "node scripts/start-all.mjs",
+    "build:web": "turbo run build --filter=@glucoplate/web",
+    "build:backend": "turbo run build --filter=@glucoplate/svc-* --filter=@glucoplate/gateway"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",

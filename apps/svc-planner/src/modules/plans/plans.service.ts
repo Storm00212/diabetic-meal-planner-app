@@ -150,6 +150,7 @@ export function toMealPlanItem(row: MealPlanItemRow): MealPlanItemWithReason {
     /** The cost snapshotted at plan time. */
     cost: row.plannedCost,
     carbsG: row.carbsG,
+    proteinG: row.proteinG,
     calories: row.calories,
     glycemicIndex: row.glycemicIndex,
     status: row.status as PlanItemStatus,
@@ -308,6 +309,7 @@ export const plansService = {
             dishName: dish.name,
             plannedCost: effectiveCost(dish),
             carbsG: dish.carbsG,
+            proteinG: dish.proteinG,
             calories: dish.calories,
             glycemicIndex: dish.glycemicIndex,
             servings: 1,

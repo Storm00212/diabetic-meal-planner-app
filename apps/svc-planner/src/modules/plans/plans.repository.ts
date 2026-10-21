@@ -49,6 +49,7 @@ export const plansRepository = {
       dishName: string;
       plannedCost: number;
       carbsG: number;
+      proteinG: number;
       calories: number;
       glycemicIndex: number;
       servings?: number;

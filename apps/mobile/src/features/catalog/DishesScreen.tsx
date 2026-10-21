@@ -234,7 +234,14 @@ export default function DishesScreen() {
                   className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
                   <View className="flex-row justify-between items-start gap-3">
-                    <Text className="font-semibold text-slate-900 text-base">{dish.name}</Text>
+                    <View className="flex-1">
+                      <Text className="font-semibold text-slate-900 text-base">{dish.name}</Text>
+                      {dish.servingLabel ? (
+                        <Text className="mt-0.5 text-xs text-slate-400">
+                          {dish.servingLabel}
+                        </Text>
+                      ) : null}
+                    </View>
                     <View className={`rounded-full px-2.5 py-0.5 ${
                       dish.isPantryItem
                         ? "bg-amber-100"

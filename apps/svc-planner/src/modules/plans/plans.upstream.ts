@@ -29,7 +29,14 @@ import { logger } from "../../lib/logger.js";
 const CACHE_TTL_MS = 60_000;
 
 /** How long the planner waits for a downstream service before giving up. */
-const UPSTREAM_TIMEOUT_MS = 8000;
+/**
+ * How long to wait for another service.
+ *
+ * The hosted database scales to zero, so the first query after a pause has to
+ * wake the compute. The timeout has to allow for that, otherwise a service
+ * that is perfectly healthy is treated as unreachable.
+ */
+const UPSTREAM_TIMEOUT_MS = 20000;
 
 type CacheEntry<T> = {
   value: T;

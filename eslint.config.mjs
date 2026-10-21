@@ -57,4 +57,27 @@ export default tseslint.config(
       "no-undef": "off",
     },
   },
+
+  // Build tooling is CommonJS, not ES modules.
+  {
+    files: [
+      "**/babel.config.js",
+      "**/metro.config.js",
+      "**/tailwind.config.js",
+      "**/postcss.config.js",
+    ],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+        module: "writable",
+        require: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 );

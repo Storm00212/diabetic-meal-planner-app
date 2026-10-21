@@ -123,29 +123,27 @@ and `apps/mobile/.env`. All of them are git-ignored.
 
 ## 5. Run it locally
 
-You do **not** need to install Postgres. The repo embeds one per service.
+You do **not** need to install Postgres. The repo embeds one.
 
-**Terminal 1** — the four local databases (leave running):
+**Terminal 1** — the local database (leave running):
 
 ```bash
 npm run db:local
 ```
 
 ```
-  Local Postgres is running — one database per service.
-    auth     postgresql://postgres:postgres@127.0.0.1:5432/postgres
-    catalog  postgresql://postgres:postgres@127.0.0.1:5433/postgres
-    planner  postgresql://postgres:postgres@127.0.0.1:5434/postgres
-    health   postgresql://postgres:postgres@127.0.0.1:5435/postgres
+  Local Postgres is running — one database, shared by every service.
+    postgresql://postgres:postgres@127.0.0.1:5432/postgres
 ```
 
-**Terminal 2** — create the schemas, load the data, start everything:
+**Terminal 2** — create the schema, load the data, start everything:
 
 ```bash
-npm run db:generate
-npm run db:push
-npm run db:seed
-npm run dev
+npm run env:sync      # writes each service's .env
+npm run db:generate   # one Prisma client per service
+npm run db:push       # creates the schema
+npm run db:seed       # 95 dishes, 6 accounts, 12 sample plans
+npm run dev           # the gateway, the four services and the web app
 ```
 
 `npm run dev` starts the gateway, the four services and the web app. Open
@@ -153,6 +151,20 @@ npm run dev
 
 > Vite binds to `localhost` (IPv6) on Windows — `http://localhost:5173`
 > works, `http://127.0.0.1:5173` may not.
+
+### Working against the hosted database instead
+
+The services and the schema must point at the same place, so use the same
+flag for both:
+
+```bash
+npm run env:sync -- --neon   # the services use the hosted database
+npm run db:push -- --neon    # and the schema goes there too
+npm run db:seed
+```
+
+Put the hosted URL in the root `.env.local` as `DATABASE_URL` (and
+`DIRECT_DATABASE_URL` if your host gives you a separate direct endpoint).
 
 ## 6. Check it
 
@@ -223,40 +235,63 @@ Other things to try:
 
 ## 8. Deploy to the internet (free)
 
-### 8a. Four Neon branches
+### 8a. One Neon database
 
 1. <https://neon.com> → sign up (no card) → create a project `glucoplate`.
 2. Region: **AWS Europe (Frankfurt)** or **Ireland** — closest to Kenya.
-3. Create four branches: `auth`, `catalog`, `planner`, `health`. Each needs
-   its own branch so each service gets its own database.
-4. For each branch, copy the **pooled** connection string. It ends in
-   `-pooler`. Change `sslmode=require` to `sslmode=verify-full` (identical
-   verified TLS, but it silences a warning on every start). Add
-   `&pgbouncer=true` — Prisma needs it through a transaction-mode pooler.
-5. Also copy the **direct** connection string for each branch (it does not
-   end in `-pooler`) — that is `DIRECT_DATABASE_URL`.
+3. Open **Connection Details**. You want the **direct** connection string —
+   the hostname **without** `-pooler`. Copy it as `DATABASE_URL`.
+4. **Add the pool parameters.** Four services share this one branch, so every
+   connection counts:
 
-### 8b. Create the schemas and seed the hosted databases
+   ```
+   ?sslmode=verify-full&connection_limit=1&connect_timeout=15&pool_timeout=15
+   ```
 
-For each of the four branches:
+   - `connection_limit=1` — one connection per service, four in total.
+   - `connect_timeout=15` — Neon scales to zero, and waking the compute takes
+     seconds.
+   - `pool_timeout=15` — do not fail fast while the pool is busy.
+   - No `pgbouncer=true` on a direct endpoint: it disables prepared
+     statements, which the direct connection supports perfectly well. It
+     measured about three times slower.
+
+   A complete URL looks like:
+
+   ```
+   postgresql://neondb_owner:PASSWORD@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=verify-full&connection_limit=1&connect_timeout=15&pool_timeout=15
+   ```
+
+5. Copy the **pooled** connection string too (the hostname **with**
+   `-pooler`) into `POOLED_DATABASE_URL`, with `&pgbouncer=true` added. You
+   do not need it for the demo, but it is what you would use if you deployed
+   to a serverless host where many short-lived processes share a few
+   connections.
+6. Put the same string in `DIRECT_DATABASE_URL`, so `prisma db push` uses a
+   connection that can run DDL.
+
+### 8b. Create the schema and seed the hosted database
 
 ```bash
 # macOS / Linux
-export DATABASE_URL="postgresql://...@ep-auth-pooler.../neondb?sslmode=verify-full&pgbouncer=true"
-export DIRECT_DATABASE_URL="postgresql://...@ep-auth.../neondb?sslmode=verify-full"
-npm run db:push --workspace=@glucoplate/svc-auth
-npm run db:seed --workspace=@glucoplate/svc-auth
-```
+export DATABASE_URL="postgresql://...&pgbouncer=true&connection_limit=2&connect_timeout=15&pool_timeout=15"
+export DIRECT_DATABASE_URL="postgresql://..."
 
-```powershell
 # Windows PowerShell
-$env:DATABASE_URL="postgresql://...@ep-auth-pooler.../neondb?sslmode=verify-full&pgbouncer=true"
-$env:DIRECT_DATABASE_URL="postgresql://...@ep-auth.../neondb?sslmode=verify-full"
-npm run db:push --workspace=@glucoplate/svc-auth
-npm run db:seed --workspace=@glucoplate/svc-auth
+$env:DATABASE_URL="postgresql://...&pgbouncer=true&connection_limit=2&connect_timeout=15&pool_timeout=15"
+$env:DIRECT_DATABASE_URL="postgresql://..."
 ```
 
-Repeat for `svc-catalog`, `svc-planner`, `svc-health`.
+Then:
+
+```bash
+npm run db:schema      # builds the combined schema from the four services
+npm run db:push        # creates every table
+npm run db:seed        # 95 dishes, 6 accounts, 12 sample plans
+```
+
+`npm run db:push` is safe to re-run: it applies the combined schema, which
+knows about every table, so it never drops one.
 
 > The `svc-planner` seed needs to know the user ids that `svc-auth` created.
 > It assumes the personas are ids 1..6 in `PERSONAS` order and logs a
@@ -296,39 +331,17 @@ Repeat for `svc-catalog`, `svc-planner`, `svc-health`.
    SVC_CATALOG_URL  = http://127.0.0.1:4002
    SVC_PLANNER_URL  = http://127.0.0.1:4003
    SVC_HEALTH_URL   = http://127.0.0.1:4004
-   DATABASE_URL        = <the AUTH branch's pooled URL + ?pgbouncer=true>
-   DIRECT_DATABASE_URL = <the AUTH branch's direct URL>
+   DATABASE_URL        = <the Neon direct URL + &sslmode=verify-full&connection_limit=1&connect_timeout=15&pool_timeout=15>
+   DIRECT_DATABASE_URL = <the same URL>
+   POOLED_DATABASE_URL = <the Neon pooled URL + &pgbouncer=true>   # optional, for serverless
    ```
 
-   > One container, one `DATABASE_URL` pair — but there are four databases.
-   > The other three services read their own `DATABASE_URL` from their own
-   > `.env`, which is **not** in the container. Two ways forward:
-   >
-   > - **Recommended:** give each service its own `DATABASE_URL` by giving
-   >   each service its own `PORT`-scoped env file inside the image, or
-   > - Use **one Neon branch per service** and add a `DATABASE_URL_<SERVICE>`
-   >   variable per service, then have `scripts/sync-env.mjs` (or the
-   >   container's start script) write the per-service `.env` at boot.
-   >
-   > The start script already loads each service's own `.env` **before** the
-   > root one, so the simplest fix is to write the four `.env` files into the
-   > image at build time from four environment variables:
-   >
-   > ```
-   > AUTH_DATABASE_URL=...     CATALOG_DATABASE_URL=...
-   > PLANNER_DATABASE_URL=...  HEALTH_DATABASE_URL=...
-   > ```
-   >
-   > then in the build step:
-   >
-   > ```bash
-   > npm run env:sync   # writes apps/svc-*/.env from AUTH_/CATALOG_/... variables
-   > ```
-   >
-   > `scripts/sync-env.mjs` already reads `AUTH_DATABASE_URL`,
-   > `CATALOG_DATABASE_URL`, `PLANNER_DATABASE_URL` and
-   > `HEALTH_DATABASE_URL`. Add those four to Render's environment and add
-   > `npm run env:sync` to the build command.
+   All five services share that one database. The `SVC_*_URL` values are
+   localhost because they run inside the same container.
+
+   > **Do not add a second `DATABASE_URL`.** One database, one variable, four
+   > services. The pool parameters are what keep that within Neon's
+   > connection limit.
 
 5. The first deploy takes ~3–5 minutes. Watch for `✓ Compiled successfully`.
 6. `https://glucoplate.onrender.com/api/health` should return
@@ -349,13 +362,16 @@ EXPO_PUBLIC_API_URL=https://glucoplate.onrender.com npm run dev:mobile
 | Symptom | Fix |
 |---|---|
 | `npm run db:local` says the port is in use | Another Postgres is running. Stop it, or `npm run db:local:reset` first. |
-| `db:push` cannot connect | `npm run db:local` is not running, or you are pointing at the wrong branch. |
+| `db:push` cannot connect | `npm run db:local` is not running, or the schema was pushed to a different database than the services use. Use the same flag for both: `npm run env:sync -- --neon` and `npm run db:push -- --neon`. |
+| Queries take 15+ seconds, or `Server has closed the connection` | The pool is exhausted. Use the **direct** endpoint (no `-pooler`) and `connection_limit=1`. Four services share one branch. |
+| `P1001: Can't reach database server` | Neon was asleep. Add `connect_timeout=15` to the URL. |
+| The health check says a service is down but it is fine | The hosted database was waking up. The gateway waits 30 s; if you changed that, put it back. |
 | A service returns 401 for a token that svc-auth just minted | The `JWT_SECRET` differs between the services. Run `npm run env:sync` so they all share the root `.env.local` value, then restart the services. |
-| `PrismaClientInitializationError: prepared statement s0 already exists` | The runtime URL is missing `?pgbouncer=true`. |
+| `PrismaClientInitializationError: prepared statement s0 already exists` | The URL points at a pooled endpoint but is missing `?pgbouncer=true`. |
 | The gateway returns 502 for one path | That upstream is down. `GET /api/health` shows which one. |
 | Render shows a 1-minute loading page | Cold start. Hit the URL again, or keep it warm (below). |
 | `npm install` removes `drizzle-kit`/`eslint` | `NODE_ENV=production` is set. The repo's `.npmrc` (`include=dev`) prevents this. |
-| The mobile app cannot reach the API | A physical device needs your computer's LAN IP, not `localhost`. Set `EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:5173`… actually the *gateway's* port: `http://<your-LAN-IP>:4000`. |
+| The mobile app cannot reach the API | A physical device needs your computer's LAN IP, not `localhost`. Set `EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:4000`. |
 
 ### Keeping the demo warm (optional)
 

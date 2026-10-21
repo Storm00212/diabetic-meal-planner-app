@@ -245,6 +245,7 @@ export type MealPlanItem = {
   /** Cost in KES, snapshotted at plan time. */
   cost: number;
   carbsG: number;
+  proteinG: number;
   calories: number;
   glycemicIndex: number;
   status: PlanItemStatus;

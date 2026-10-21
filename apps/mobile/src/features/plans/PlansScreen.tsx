@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { money, formatDate } from '@glucoplate/domain';
 import { giBand } from '@glucoplate/domain';
 import { apiFetch, apiJson } from '@/lib/api-client';
-import type { MealPlanWithItems } from '@glucoplate/types';
+import type { MealPlanItem, MealPlanWithItems } from '@glucoplate/types';
 
 const SLOT_META: Record<string, { label: string; icon: string }> = {
   morning: { label: "Morning", icon: "🌅" },
@@ -20,6 +20,17 @@ const SLOT_META: Record<string, { label: string; icon: string }> = {
   evening: { label: "Evening", icon: "🌙" },
 };
 const SLOT_ORDER = ["morning", "afternoon", "evening"];
+
+/**
+ * Why a saved dish was chosen, when the planner recorded one.
+ *
+ * The shared `MealPlanItem` contract does not declare the field, so it is
+ * read defensively and only shown when it is a non-empty string.
+ */
+function reasonFor(item: MealPlanItem): string | null {
+  const reason = (item as { reason?: string }).reason;
+  return typeof reason === "string" && reason.trim() ? reason : null;
+}
 
 export default function PlansScreen() {
   const router = useRouter();
@@ -190,6 +201,7 @@ export default function PlansScreen() {
                     {SLOT_ORDER.map((slot) => {
                       const item = plan.items.find((i) => i.slot === slot);
                       const meta = SLOT_META[slot];
+                      const reason = item ? reasonFor(item) : null;
                       return (
                         <View
                           key={slot}
@@ -202,6 +214,11 @@ export default function PlansScreen() {
                           {item ? (
                             <View>
                               <Text className="mt-1 font-medium text-slate-800 text-sm">{item.dishName}</Text>
+                              {reason ? (
+                                <Text className="mt-1 text-xs text-slate-500 leading-relaxed">
+                                  {reason}
+                                </Text>
+                              ) : null}
                               <View className="flex-row flex-wrap gap-1.5 mt-1">
                                 <View className={`rounded-full px-2 py-0.5 ${giBand(item.glycemicIndex).badge}`}>
                                   <Text className={`text-[10px] font-semibold ${giBand(item.glycemicIndex).badge.includes('teal') ? 'text-teal-700' : 'text-slate-700'}`}>

@@ -61,7 +61,7 @@ async function fetchPlans(
 ): Promise<UpstreamPlan[]> {
   const response = await fetch(`${config.svcPlannerUrl}/api/plans`, {
     headers: { Authorization: authorization ?? "" },
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(20000),
   });
 
   if (!response.ok) {

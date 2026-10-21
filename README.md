@@ -15,7 +15,7 @@ mechanic, a retired teacher and a smallholder farmer.
 ## 🏗️ Architecture
 
 A **Turborepo monorepo**: two frontends, one gateway, four domain services
-with their own databases, and a set of shared packages holding the contract
+sharing one database, and a set of shared packages holding the contract
 between them.
 
 ```
@@ -37,11 +37,17 @@ packages/
 └── config/       shared tsconfig and env helpers
 ```
 
-Each service owns its own **database** (`prisma/` per service, database-per-
-service). Where one service needs another's data it calls its HTTP API and
-caches the answer. The **gateway** is a thin reverse proxy, so both clients
-only need one base URL and a single `x-request-id` traces a request through
-every service it touched.
+Each service owns its **own tables** — each generates a Prisma client for only
+the models it owns, so a service physically cannot touch another service's
+data. Where one service needs another's data it calls its HTTP API. The
+**gateway** is a thin reverse proxy, so both clients only need one base URL
+and a single `x-request-id` traces a request through every service it
+touched.
+
+Hosting: **Neon Free** (Postgres) + **Render Free** (web service) — both $0.
+All four services share one Neon database, so the connection string needs
+`?pgbouncer=true&connection_limit=2&connect_timeout=15&pool_timeout=15` to
+stay inside Neon's ten-connection limit.
 
 📖 **[docs/MONOREPO.md](docs/MONOREPO.md)** — the full blueprint, the file
 tree, the debugging setup and every root script.

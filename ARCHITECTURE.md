@@ -36,9 +36,14 @@ target architecture, and the target is now the **Turborepo monorepo** in
 
 ### Additions the work made that this document did not anticipate
 
-- **Database-per-service** with an explicit `prisma/` directory per service,
-  each with its own `output` folder so one service can never clobber
-  another's generated client.
+- **One database, four owners.** Each service keeps its own
+  `prisma/schema.prisma` with only the models it owns and generates a client
+  for only those, so a service physically cannot touch another service's
+  tables. The root `prisma/schema.prisma` is the union of the four, generated
+  by `npm run db:schema`, and is what `prisma db push` applies. The
+  connection string carries `?pgbouncer=true&connection_limit=2&connect_timeout=15&pool_timeout=15`
+  because Neon Free allows only ten concurrent connections per branch and four
+  services share one database.
 - **The gateway** gives both clients a single base URL and makes a request
   traceable across every service through one `x-request-id`.
 - **A shared `packages/domain`** so the planner, budget rules and safety

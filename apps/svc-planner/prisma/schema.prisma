@@ -71,6 +71,7 @@ model MealPlanItem {
   dishName      String @default("")
   plannedCost   Float  @default(0)
   carbsG        Int    @default(0)
+  proteinG      Int    @default(0)
   calories      Int    @default(0)
   glycemicIndex Int    @default(0)
   actualCost    Float  @default(0)

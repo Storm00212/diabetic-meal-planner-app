@@ -1,21 +1,20 @@
 /**
  * Local Postgres for development.
  *
- * The monorepo uses the database-per-service pattern, so local development
- * needs one database per service. This script starts four embedded Postgres
- * instances (PGlite behind a real Postgres wire-protocol socket) — one per
- * service — so nothing has to be installed on the host.
+ * GlucoPlate runs one Postgres database shared by all four services, so this
+ * starts a single embedded Postgres (PGlite behind a real Postgres
+ * wire-protocol socket). Nothing has to be installed on the host.
  *
- *   npm run db:local          start all four (Ctrl+C to stop)
- *   npm run db:local:reset    wipe the local data directories
+ *   npm run db:local          start it (Ctrl+C to stop)
+ *   npm run db:local:reset    wipe the local data directory
  *
- * Ports:
- *   auth    5432
- *   catalog 5433
- *   planner 5434
- *   health  5435
+ *   host: 127.0.0.1
+ *   port: 5432
+ *   user: postgres
+ *   pass: postgres
+ *   db:   postgres
  *
- * The matching per-service `.env` files are written by `npm run env:sync`.
+ * The per-service `.env` files are written by `npm run env:sync`.
  */
 
 import { spawn } from "node:child_process";
@@ -26,12 +25,8 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 
-export const SERVICES = [
-  { name: "auth", port: 5432 },
-  { name: "catalog", port: 5433 },
-  { name: "planner", port: 5434 },
-  { name: "health", port: 5435 },
-];
+/** The one database every service uses. */
+const SERVICE = { name: "glucoplate", port: 5432 };
 
 const serverEntry = join(
   root,
@@ -51,28 +46,17 @@ if (!existsSync(serverEntry)) {
 }
 
 if (process.argv.includes("--reset")) {
-  for (const service of SERVICES) {
-    rmSync(join(root, ".pgdata", service.name), {
-      recursive: true,
-      force: true,
-    });
-  }
-  console.log("Local databases wiped.");
+  rmSync(join(root, ".pgdata"), { recursive: true, force: true });
+  console.log("Local database wiped.");
   process.exit(0);
 }
 
 const children = [];
 
-/**
- * Starts one instance and resolves when it is listening.
- *
- * The instances are started one after another on purpose: PGlite cannot
- * initialise several databases at the same moment, and starting them in
- * parallel fails with a filesystem error.
- */
+/** Starts the database and resolves once it is listening. */
 function start(service) {
   return new Promise((resolve, reject) => {
-    const dataDir = join(root, ".pgdata", service.name);
+    const dataDir = join(root, ".pgdata");
     mkdirSync(dataDir, { recursive: true });
 
     const child = spawn(
@@ -86,12 +70,12 @@ function start(service) {
         "-h",
         "127.0.0.1",
         "-m",
-        "10",
+        "20",
       ],
       { stdio: ["ignore", "pipe", "pipe"] },
     );
 
-    const prefix = `[db:${service.name}:${service.port}]`;
+    const prefix = `[db:${service.port}]`;
     let settled = false;
 
     const onLine = (line) => {
@@ -115,7 +99,7 @@ function start(service) {
       console.log(`${prefix} exited with code ${code}`);
       if (!settled) {
         settled = true;
-        reject(new Error(`${service.name} exited with code ${code}`));
+        reject(new Error(`the database exited with code ${code}`));
       }
     });
 
@@ -123,27 +107,21 @@ function start(service) {
   });
 }
 
-for (const service of SERVICES) {
-  try {
-    await start(service);
-  } catch (error) {
-    console.error(`Could not start the ${service.name} database:`, error.message);
-    console.error("Is the port already in use? Stop the other process and retry.");
-    process.exit(1);
-  }
-  // A short pause keeps the filesystem happy between instances.
-  await new Promise((resolve) => setTimeout(resolve, 400));
+try {
+  await start(SERVICE);
+} catch (error) {
+  console.error("Could not start the local database:", error.message);
+  console.error("Is the port already in use? Stop the other process and retry.");
+  process.exit(1);
 }
 
 console.log("");
-console.log("  Local Postgres is running — one database per service.");
-for (const service of SERVICES) {
-  console.log(
-    `    ${service.name.padEnd(8)} postgresql://postgres:postgres@127.0.0.1:${service.port}/postgres`,
-  );
-}
+console.log("  Local Postgres is running — one database, shared by every service.");
+console.log(
+  `    postgresql://postgres:postgres@127.0.0.1:${SERVICE.port}/postgres`,
+);
 console.log("");
-console.log("  Press Ctrl+C to stop all of them.");
+console.log("  Press Ctrl+C to stop it.");
 console.log("");
 
 function shutdown() {

@@ -208,6 +208,7 @@ async function main() {
             dishName: dish.name,
             plannedCost: dish.isPantryItem ? 0 : dish.cost,
             carbsG: dish.carbsG,
+            proteinG: dish.proteinG,
             calories: dish.calories,
             glycemicIndex: dish.glycemicIndex,
             servings: 1,

@@ -87,6 +87,13 @@ export default function DishModal({
     setValues((v) => ({ ...v, [key]: val }));
   }
 
+  /**
+   * The serving the catalogue recorded for this dish, e.g. "1 chapati (60 g)".
+   * It stands in for the description when the dish has none.
+   */
+  const servingLabel = editing?.servingLabel?.trim() ?? "";
+  const descriptionIsEmpty = values.description.trim() === "";
+
   async function handleFormSubmit() {
     if (!values.name.trim()) {
       setError("Dish name is required.");
@@ -160,6 +167,9 @@ export default function DishModal({
                   <Sparkles size={20} color={fetchingNutrients ? "#94a3b8" : "#0d9488"} />
                 </TouchableOpacity>
               </View>
+              {servingLabel && !descriptionIsEmpty ? (
+                <Text className="mt-1 text-xs text-slate-400">{servingLabel}</Text>
+              ) : null}
             </View>
 
             <View>
@@ -172,6 +182,9 @@ export default function DishModal({
                 placeholder="Short note about the dish"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
               />
+              {servingLabel && descriptionIsEmpty ? (
+                <Text className="mt-1 text-xs text-slate-400">{servingLabel}</Text>
+              ) : null}
             </View>
 
             <View className="flex-row gap-3">
@@ -200,7 +213,7 @@ export default function DishModal({
             </View>
 
             <View className="flex-row gap-3">
-              {renderNumField("Cost", "cost", "$")}
+              {renderNumField("Cost", "cost", "KSh")}
             </View>
 
             <View className="flex-row gap-3">

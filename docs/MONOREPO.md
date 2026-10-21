@@ -341,37 +341,60 @@ is unreachable — so "up" and "up but broken" are different answers.
 ### How the pieces start up
 
 ```
-npm run db:local      # terminal 1 — four Postgres instances, one per service
+npm run db:local      # terminal 1 — an embedded Postgres, no install needed
 npm run env:sync      # terminal 2 — writes each service's .env
-npm run db:push       # terminal 2 — creates the four schemas
+npm run db:generate   # terminal 2 — one Prisma client per service
+npm run db:push       # terminal 2 — creates the schema in the database
 npm run db:seed       # terminal 2 — 95 dishes, 6 accounts, 12 sample plans
 npm run dev           # terminal 2 — the gateway, the four services, the web app
 ```
 
 `npm run dev:mobile` starts Expo Go instead of the web app.
 
+**Pointing at the hosted database instead of the local one:**
+
+```bash
+npm run env:sync -- --neon   # the services use the hosted database
+npm run db:push -- --neon    # and the schema goes there too
+```
+
+Use the same flag for both, or the services and the schema will not agree.
+
 ---
 
 ## 5. Ports and databases
 
-| Service | Port | Own database | Local DB port |
-|---|---|---|---|
-| gateway | 4000 | — | — |
-| svc-auth | 4001 | `users`, `payments` | 5432 |
-| svc-catalog | 4002 | `dishes` | 5433 |
-| svc-planner | 4003 | `meal_plans`, `meal_plan_items` | 5434 |
-| svc-health | 4004 | `weight_logs`, `weight_targets` | 5435 |
-| web (Vite) | 5173 | — | — |
-| mobile (Expo) | 8081 | — | — |
+| Service | Port | Tables it owns |
+|---|---|---|
+| gateway | 4000 | — |
+| svc-auth | 4001 | `User`, `Payment` |
+| svc-catalog | 4002 | `Dish` |
+| svc-planner | 4003 | `MealPlan`, `MealPlanItem` |
+| svc-health | 4004 | `WeightLog`, `WeightTarget` |
+| web (Vite) | 5173 | — |
+| mobile (Expo) | 8081 | — |
 
-The ports live in one place: `SERVICE_PORTS` in `packages/types`. The local
-database ports live in `scripts/sync-env.mjs`. Nothing else hard-codes a port.
+The ports live in one place: `SERVICE_PORTS` in `packages/types`. Nothing
+else hard-codes a port.
 
-### Database-per-service, honestly
+### One database, four owners
 
-Each service really does have its own database, so a service cannot join
-another service's tables. Where one service needs another's data it calls its
-HTTP API and caches the answer for 60 seconds:
+All four services point at **the same Postgres**. Neon is the hosted one;
+`npm run db:local` gives you a local one.
+
+The service boundary is kept in two places rather than in the database:
+
+1. **Each service has its own `prisma/schema.prisma`** with only the models
+   it owns, and generates its client into its own folder
+   (`apps/<service>/generated/prisma`). A service therefore *physically
+   cannot* read or write another service's tables — the model is not in its
+   client.
+2. **`prisma/schema.prisma` at the repository root** is the union of the four
+   schemas, and it is what `prisma db push` applies. It is **generated** by
+   `npm run db:schema`, so the two can never drift apart.
+
+A service that needs another service's data calls its HTTP API and caches the
+answer for 60 seconds:
 
 - `svc-planner` → `svc-catalog` for the dish catalogue, and → `svc-auth` for
   the caller's limits.
@@ -380,17 +403,36 @@ HTTP API and caches the answer for 60 seconds:
 If an upstream is unreachable the cached copy is served, and only a cold
 service with no cache returns a 503.
 
-**Hosted Postgres:** give each service its own Neon branch (one project, four
-branches) or its own Neon project. Then set `DATABASE_URL` and
-`DIRECT_DATABASE_URL` per service in Render's environment settings. The pooled
-URL needs `?pgbouncer=true` — the pooler is in transaction mode and Prisma
-cannot use prepared statements through it.
+### The connection configuration is the part that bites
+
+Neon Free allows only a handful of concurrent connections per branch, and
+**four services share one database**. Getting this wrong does not fail
+loudly — it fails *slowly*, with queries that take fifteen seconds and
+`Server has closed the connection` errors, because the pool is exhausted and
+Neon is closing connections the services are still holding.
+
+What actually works, measured against the live database:
+
+| Setting | Why |
+|---|---|
+| **Direct endpoint** (hostname without `-pooler`) at runtime | Measured roughly **three times faster** than the pooled endpoint (0.5 s vs 1.8 s for the same query). With a small client pool the pooler only gets in the way. |
+| `connection_limit=1` | One connection per service, four in total — comfortably inside the free limit. |
+| `connect_timeout=15` | Neon scales to zero; waking the compute takes seconds. |
+| `pool_timeout=15` | Do not fail fast while the pool is busy. |
+| `pgbouncer=true` | **Only** for a pooled endpoint. It disables prepared statements, which the pooler cannot support — but on a direct connection it is an unnecessary slowdown. |
+| `POOLED_DATABASE_URL` | Kept alongside for a serverless deployment, where many short-lived processes need to share a small number of connections. |
+
+The upstream HTTP timeouts are generous for the same reason: the gateway waits
+30 s for an upstream and 20 s for a health probe. A short timeout reports a
+healthy service as down while Neon is waking up.
 
 ---
 
 ## 6. Rules of the road
 
-1. **A service never reads another service's database.** It calls the API.
+1. **A service never reads another service's tables.** It calls the API. The
+   boundary is enforced by the schema: a service's Prisma client only has the
+   models it owns.
 2. **Every route lives in a feature module** under `src/modules/<domain>/`.
 3. **Ownership is enforced in the query** — `where: { id, userId }`, never in
    the UI.
@@ -407,3 +449,8 @@ cannot use prepared statements through it.
    git-ignored; `.env.example` is the only env file that is tracked.
 10. **Safety copy is never hand-written.** Use `PLANNING_AID_NOTICE` and
     `clinicianBannerFor()` from `@glucoplate/domain`.
+11. **A new endpoint touches three places:** the service that owns it,
+    `apps/gateway/src/routes.ts` (the routing table) and
+    `packages/types/src/index.ts` (the contract). `npm run audit` catches a
+    missing route, and `npm run test:clients` catches a client that reads a
+    field the API does not return.

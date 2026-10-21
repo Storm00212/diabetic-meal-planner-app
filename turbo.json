@@ -1,7 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalDependencies": [".env", ".env.local"],
+  "globalDependencies": [
+    ".env",
+    ".env.local"
+  ],
   "globalEnv": [
     "NODE_ENV",
     "JWT_SECRET",
@@ -21,8 +24,14 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**", ".expo/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        "build/**",
+        ".expo/**"
+      ]
     },
     "dev": {
       "cache": false,
@@ -33,13 +42,19 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "clean": {
       "cache": false
@@ -47,13 +62,11 @@
     "db:generate": {
       "cache": false
     },
-    "db:push": {
-      "cache": false,
-      "dependsOn": ["db:generate"]
-    },
     "db:seed": {
       "cache": false,
-      "dependsOn": ["db:generate"]
+      "dependsOn": [
+        "db:generate"
+      ]
     }
   }
 }

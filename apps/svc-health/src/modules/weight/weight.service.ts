@@ -64,7 +64,7 @@ async function fetchAuthUser(
   try {
     const response = await fetch(`${config.svcAuthUrl}/api/auth/me`, {
       headers: { Authorization: authorization ?? "" },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(20000),
     });
 
     if (!response.ok) {
@@ -111,7 +111,7 @@ async function pushTargetsToAuth(
         currentWeight: targets.currentWeight,
         targetWeight: targets.targetWeight,
       }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(20000),
     });
 
     if (!response.ok) {

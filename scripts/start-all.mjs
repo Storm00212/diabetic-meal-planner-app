@@ -82,15 +82,22 @@ function start(name, cwd, extraEnv = {}) {
 }
 
 // The domain services first, so the gateway has something to talk to.
+//
+// Each service is pinned to its own port. They all inherit the same
+// environment, and on a host like Render that environment contains the public
+// $PORT — so without this, four services would try to bind the same port.
 for (const service of SERVICES) {
   start(
     service.name,
     join(root, "apps", service.workspace.replace("@glucoplate/", "")),
+    { PORT: String(service.port) },
   );
 }
 
 // The gateway last: it binds the public $PORT.
-start("gateway", join(root, "apps", "gateway"));
+start("gateway", join(root, "apps", "gateway"), {
+  PORT: process.env.PORT ?? "4000",
+});
 
 let shuttingDown = false;
 
