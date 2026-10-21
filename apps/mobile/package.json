@@ -10,9 +10,9 @@
     "android": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --android",
     "ios": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --ios",
     "web": "cross-env EXPO_ROUTER_APP_ROOT=app expo start --web",
-    "build": "expo export --platform android",
+    "build": "node ../../scripts/build-units.mjs mobile",
     "lint": "eslint app src",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "npx tsc -p tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('.expo',{recursive:true,force:true})\""
   },
   "dependencies": {

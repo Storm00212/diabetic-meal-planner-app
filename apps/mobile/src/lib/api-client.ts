@@ -1,3 +1,6 @@
+import * as SecureStore from "expo-secure-store";
+import { createGlucoPlateApi, resolveApiUrl } from "@glucoplate/api-client";
+
 /**
  * The mobile app's API client.
  *
@@ -6,21 +9,10 @@
  * device's secure storage.
  */
 
-import * as SecureStore from "expo-secure-store";
-import {
-  createGlucoPlateApi,
-  resolveServiceUrls,
-  type GlucoPlateApi,
-} from "@glucoplate/api-client";
-
 const TOKEN_STORAGE_KEY = "auth_token";
 
-export const serviceUrls = resolveServiceUrls({
+export const apiUrl = resolveApiUrl({
   EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
-  EXPO_PUBLIC_SVC_AUTH_URL: process.env.EXPO_PUBLIC_SVC_AUTH_URL,
-  EXPO_PUBLIC_SVC_CATALOG_URL: process.env.EXPO_PUBLIC_SVC_CATALOG_URL,
-  EXPO_PUBLIC_SVC_PLANNER_URL: process.env.EXPO_PUBLIC_SVC_PLANNER_URL,
-  EXPO_PUBLIC_SVC_HEALTH_URL: process.env.EXPO_PUBLIC_SVC_HEALTH_URL,
 });
 
 export const debugEnabled = process.env.EXPO_PUBLIC_DEBUG === "true";
@@ -41,16 +33,16 @@ export async function removeToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_STORAGE_KEY);
 }
 
-export const api: GlucoPlateApi = createGlucoPlateApi({
-  service: "gateway",
-  baseUrl: serviceUrls.gateway,
+export const api = createGlucoPlateApi({
+  service: "api",
+  baseUrl: apiUrl,
   getToken: readToken,
   debug: debugEnabled,
   clientName: "mobile",
 });
 
 /**
- * A raw `fetch` against the gateway, with the access token attached.
+ * A raw `fetch` against the API, with the access token attached.
  *
  * Use this when you need the status code. `apiJson` is the shortcut for the
  * common case where you only want the body.
@@ -67,7 +59,7 @@ export async function apiFetch(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const response = await fetch(`${serviceUrls.gateway}${endpoint}`, {
+  const response = await fetch(`${apiUrl}${endpoint}`, {
     ...options,
     headers,
   });
@@ -81,7 +73,7 @@ export async function apiFetch(
   return response;
 }
 
-/** The parsed body of a request to the gateway. */
+/** The parsed body of a request to the API. */
 export async function apiJson<T = any>(
   endpoint: string,
   options: RequestInit = {},
