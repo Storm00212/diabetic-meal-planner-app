@@ -1,7 +1,11 @@
 # Deploying GlucoPlate to Render
 
-Two Render services: the **backend** (the API) and the **frontend** (the web
-app). They are deployed separately, and the order matters.
+Two Render services: the **Backend API** and the **Frontend**. The mobile app
+is not deployed — it runs on a phone with Expo Go and talks to whichever API
+you point it at.
+
+The commands, environment variables and local run instructions for all three
+units are in **[SERVICES.md](SERVICES.md)**.
 
 ---
 
@@ -14,13 +18,14 @@ variables into the bundle at build time**. So the frontend's build needs the
 backend's URL to already exist. If you build the frontend first you would have
 to rebuild it once you know the backend URL.
 
-There is one small loop, because the backend needs the frontend's URL for CORS:
-the backend's `CORS_ORIGINS` has to list the frontend's origin. You close
-that loop in step 4, by editing the backend's environment after the frontend
-exists — Render redeploys automatically when you save an environment variable.
+There is one small loop, because the backend needs the frontend's URL for
+CORS: the backend's `CORS_ORIGINS` has to list the frontend's origin. You
+close that loop in step 4, by editing the backend's environment after the
+frontend exists — Render redeploys automatically when you save an environment
+variable.
 
 ```
-1. Backend  → get https://glucoplate-xxxx.onrender.com
+1. Backend  → get https://glucoplate-api.onrender.com
 2. Frontend → get https://glucoplate-web.onrender.com
 3. Frontend → set VITE_API_URL to the backend URL   (rebuild)
 4. Backend  → set CORS_ORIGINS to the frontend URL  (redeploy)
@@ -29,7 +34,7 @@ exists — Render redeploys automatically when you save an environment variable.
 
 ---
 
-## Step 1 — the backend (Render Web Service)
+## Step 1 — the Backend API (Render Web Service)
 
 1. <https://render.com> → sign in with GitHub → **New → Web Service**.
 2. Connect the repository.
@@ -43,22 +48,24 @@ exists — Render redeploys automatically when you save an environment variable.
    | Root Directory | *(leave blank)* |
    | Runtime | Node |
    | Build Command | `npm install --include=dev && npm run db:generate && npm run build:backend` |
-   | Start Command | `npm run start:all` |
+   | Start Command | `npm run start:backend` |
    | Instance Type | **Free** |
    | Health Check Path | `/api/health` |
 
    > **Why that build command.**
-   > `npm install --include=dev` — Render sets `NODE_ENV=production`, which makes
-   > npm skip devDependencies; the flag is also in the repo's `.npmrc`, so this
-   > is belt and braces. The build needs `typescript`, `prisma` and `turbo`.
    >
-   > `npm run db:generate` — the Prisma clients are **git-ignored** (each
-   > service generates into its own folder so they cannot clobber each other),
-   > so they have to be generated on the build machine.
+   > `npm install --include=dev` — Render sets `NODE_ENV=production`, which
+   > makes npm skip devDependencies; the flag is also in the repo's `.npmrc`,
+   > so this is belt and braces. The build needs `typescript`, `prisma` and
+   > `tsx`.
    >
-   > `npm run build:backend` — type-checks the four services and the gateway.
-   > It deliberately skips the web app and the Expo app, which have their own
-   > services.
+   > `npm run db:generate` — the Prisma client is **git-ignored** (it is
+   > generated per unit so it cannot be clobbered), so it has to be generated
+   > on the build machine.
+   >
+   > `npm run build:backend` — builds the shared packages in dependency order
+   > and then type-checks the API. It is plain `tsc`, not Turborepo, so a
+   > host's build command cannot recurse into the task that called it.
 
 4. **Environment** → add:
 
@@ -69,24 +76,15 @@ exists — Render redeploys automatically when you save an environment variable.
    JWT_SECRET     = <the same long random string from your .env.local>
    DATABASE_URL        = postgresql://neondb_owner:PASSWORD@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=verify-full&connection_limit=1&connect_timeout=15&pool_timeout=15
    DIRECT_DATABASE_URL = <the same URL>
-   POOLED_DATABASE_URL = postgresql://neondb_owner:PASSWORD@ep-xxx-pooler.us-east-2.aws.neon.tech/neondb?sslmode=verify-full&pgbouncer=true&connection_limit=1&connect_timeout=15&pool_timeout=15
-   SVC_AUTH_URL     = http://127.0.0.1:4001
-   SVC_CATALOG_URL  = http://127.0.0.1:4002
-   SVC_PLANNER_URL  = http://127.0.0.1:4003
-   SVC_HEALTH_URL   = http://127.0.0.1:4004
    CORS_ORIGINS     = https://glucoplate-web.onrender.com
    ```
 
-   The `SVC_*_URL` values are `localhost` because **all five services run in
-   one container** — `npm run start:all` starts the gateway and the four
-   domain services as separate processes, and the gateway proxies to them.
-   (That is also how the free tier works: Render gives you 750 instance-hours
-   a month, and five separate services would need 3,720.)
+   `PORT` is injected by Render — do not set it.
 
    > `CORS_ORIGINS` is a guess for now — you will replace it in step 4 with
    > the real frontend URL.
 
-5. **Create Web Service.** The first build takes 3–6 minutes. Watch the log for
+5. **Create Web Service**. The first build takes 3–6 minutes. Watch the log for
    `listening on http://0.0.0.0:<port>`.
 6. When it goes green you get a URL like
    `https://glucoplate-api.onrender.com`. **Save it** — that is the API URL.
@@ -94,19 +92,19 @@ exists — Render redeploys automatically when you save an environment variable.
 
    ```bash
    curl https://glucoplate-api.onrender.com/api/health
-   # {"ok":true,"service":"gateway","upstream":{"auth":true,"catalog":true,"planner":true,"health":true}}
+   # {"ok":true,"service":"glucoplate-api","database":"connected"}
    ```
 
-> **If the health check says `ok: false`** the services are up but the
-> database is not. Check `DATABASE_URL` on Render, and check the Neon console
-> for a paused compute.
+> **If the health check says `ok: false`** the service is up but the database
+> is not. Check `DATABASE_URL` on Render, and check the Neon console for a
+> paused compute.
 
-> **If the build fails with `Cannot find module 'drizzle-kit'`** the build
-> command is missing `--include=dev`.
+> **If the build fails with `Cannot find module 'prisma'`** the build command
+> is missing `--include=dev`.
 
 ---
 
-## Step 2 — the frontend (Render Static Site)
+## Step 2 — the Frontend (Render Static Site)
 
 1. **New → Static Site** → connect the same repository.
 2. Settings:
@@ -188,30 +186,51 @@ npm run smoke  -- https://glucoplate-api.onrender.com
 
 ---
 
+## Why "Root Directory" is left blank
+
+Render's **Root Directory** sets the working directory for the build and start
+commands. In a monorepo it has to be the repository root, for three reasons:
+
+1. **The build scripts only exist at the root.** `build:backend`, `build:web`
+   and `build:mobile` are root scripts. `apps/web/package.json` only has
+   `build: vite build`, so a root directory of `apps/web` fails with
+   *"Missing script: build:web"*.
+2. **The shared packages have to be built first, and their `dist/` is
+   git-ignored.** A fresh checkout has no `packages/domain/dist`, so
+   `vite build` on its own fails with *"Failed to resolve entry for package
+   @glucoplate/domain"*. The root-driven build works, because the script
+   builds the dependency packages first.
+3. **The backend needs the whole repo at runtime.** `npm run start:backend`
+   runs from the root and needs `scripts/` and every `packages/`.
+
+`turbo` and `typescript` are root devDependencies, and npm workspaces install
+the entire tree from the root with symlinks — so a blank root gives you every
+unit's dependencies, correctly linked, in one `npm install`.
+
+The trade-off is that the backend also downloads the Expo and React Native
+dependencies, which makes the build a few minutes rather than one. With 500
+build minutes a month that is not worth optimising away.
+
+---
+
 ## The free tier, honestly
 
 | Thing | Limit | What it means for you |
 |---|---|---|
 | Backend (Web Service) | 750 instance-hours **per workspace**, sleeps after 15 min idle | **The first request after a pause takes 30–60 s** — Render has to wake the instance *and* Neon has to wake its compute. **Open the app two minutes before you present.** |
 | Frontend (Static Site) | Free, never sleeps, **consumes no instance hours** | No cold start for the UI itself. Only bandwidth and build minutes. |
-| Neon | One branch, a handful of connections | Four services share it; `connection_limit=1` each keeps it at four. |
+| Neon | One branch, a handful of connections | The whole backend shares it; `connection_limit=1` keeps it well inside the limit. |
 | The keep-alive loop | Uses ~744 of your 750 hours | Only worth it on the machine you will present from. |
 
 ### ⚠️ One always-on web service, that is all
 
 Render gives the **workspace** 750 free instance-hours a month, and **every
-free web service in the workspace draws from that one pool** — production,
-staging and previews alike.
-
-- One always-on web service = 744 hours. Fine.
-- **Two** always-on web services = 1,488 hours. Over the limit, and Render
-  **suspends all of your free web services until the start of next month** —
-  including the one you meant to demo.
+free web service in the workspace draws from that one pool**. If you ever
+create a second always-on web service, you go over the limit and Render
+**suspends all of your free web services until the start of next month**.
 
 The static site does not count against instance hours, so a backend plus a
-frontend is fine. It is the **second always-on web service** that is the
-trap. If you rehearse on staging, let it spin down, and **never point a
-keep-alive loop at it**.
+frontend is fine.
 
 ### Keeping the backend awake
 
@@ -224,60 +243,6 @@ while true; do curl -s -o /dev/null https://glucoplate-api.onrender.com/api/heal
 
 ---
 
-## Should the demo use a staging environment?
-
-**No — demo on Production, and rehearse on Staging.**
-
-| | Production | Staging |
-|---|---|---|
-| Give this URL to the judges | ✅ | ❌ |
-| Always-on costs 744 instance-hours | ✅ | ❌ let it spin down |
-| Data | The demo data | A separate Neon branch |
-| Worth having? | Yes | Yes, for rehearsal only |
-
-Three reasons:
-
-1. **Full preview environments need a paid plan.** Render's preview
-   environments (a disposable copy of the whole stack per pull request)
-   require a Pro workspace. On the free Hobby plan you get **staging
-   environments** (2 per project) and single-service PR previews, which is
-   what you would use.
-2. **Staging draws from the same 750 hours.** If staging is ever kept awake
-   alongside production, you go over the limit and Render suspends *both*.
-3. **One stable URL.** The judges get one link that will not change.
-
-### If you want a staging environment (you should, for rehearsal)
-
-1. **Give it its own Neon branch**, so rehearsal logins and test dishes do
-   not end up in the demo data:
-   - neon.com → your project → **Branches → Create branch**, name it
-     `staging`.
-   - Copy that branch's **direct** connection string.
-2. **Create the environment** in Render: open your service → the
-   **Environment** dropdown at the top → **New environment instance** →
-   name it `staging`.
-3. **Set its environment variables** — same list as production, but
-   `DATABASE_URL` and `DIRECT_DATABASE_URL` point at the **staging branch**,
-   and `CORS_ORIGINS` will be the staging frontend's URL.
-4. **Prepare that branch from your machine** (same flag for both, or the
-   schema and the data end up in different places):
-
-   ```bash
-   # .env.local: DATABASE_URL and DIRECT_DATABASE_URL = the staging branch
-   npm run env:sync -- --neon
-   npm run db:push -- --neon
-   npm run db:seed
-   ```
-
-5. **Rehearse on it**, then **delete the staging environment** before the
-   demo so there is no chance of it eating the instance-hours.
-
-> The mobile app is not deployed to Render at all — it is an Expo app run on
-> a phone. Point it at whichever API URL you are rehearsing against:
-> `EXPO_PUBLIC_API_URL=https://glucoplate-api.onrender.com npm run dev:mobile`
-
----
-
 ## If something goes wrong
 
 | Symptom | Cause |
@@ -286,20 +251,20 @@ Three reasons:
 | The browser console says "blocked by CORS policy" | The backend's `CORS_ORIGINS` does not include the frontend's origin. |
 | The frontend 404s on `/dashboard/planner` | The rewrite is missing. Add the `/*` → `/index.html` rule. |
 | The backend build fails on the Prisma step | `DATABASE_URL` and `DIRECT_DATABASE_URL` must be set on Render **before** the build — `prisma generate` validates the datasource. |
-| The backend build fails on `turbo` | The build command is missing `npm install --include=dev`. |
+| The backend build fails on `turbo` or `typescript` | The build command is missing `npm install --include=dev`. |
 | Everything works locally but the deployed API is slow | The Neon compute is asleep on the first request. That is the 30–60 s wake-up. Keep it warm. |
-| The deployed API returns 502 for one path | That upstream is down. `GET /api/health` names it. |
+| The deployed API returns 502 | Look at the backend's logs — one `x-request-id` ties the failing request to its cause. |
 
 ---
 
-## What is *not* deployed here
+## The mobile app is not deployed here
 
-The **mobile app**. It is an Expo app, run on a phone with Expo Go, and it
-talks to the same gateway:
+It is an Expo app, run on a phone with Expo Go, and it talks to the same
+backend:
 
 ```bash
 EXPO_PUBLIC_API_URL=https://glucoplate-api.onrender.com npm run dev:mobile
 ```
 
-A phone on the same Wi-Fi can reach `https://glucoplate-api.onrender.com`
-directly, so no LAN address is needed once the API is deployed.
+A phone on any network can reach the deployed API, so no LAN address is
+needed once the API is up.

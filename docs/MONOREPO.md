@@ -1,19 +1,19 @@
 # The GlucoPlate monorepo
 
-A Turborepo workspace: two frontends, one gateway, four domain services, each
-with its own database, and a set of shared packages that hold the contract
-between them.
+A Turborepo workspace of **three deployable units** — a Frontend, a Backend
+API and a Mobile app — plus the shared packages that hold the contract between
+them.
 
-- [1. The target file tree](#1-the-target-file-tree)
-- [2. What moved where](#2-what-moved-where)
-- [3. Multi-client debugging](#3-multi-client-debugging)
-- [4. Root scripts](#4-root-scripts)
-- [5. Ports and databases](#5-ports-and-databases)
-- [6. Rules of the road](#6-rules-of-the-road)
+- [The tree](#1-the-tree)
+- [Why the backend is one process](#2-why-the-backend-is-one-process)
+- [Multi-client debugging](#3-multi-client-debugging)
+- [Root scripts](#4-root-scripts)
+- [The connection configuration](#5-the-connection-configuration)
+- [Rules of the road](#6-rules-of-the-road)
 
 ---
 
-## 1. The target file tree
+## 1. The tree
 
 ```
 glucoplate/
@@ -25,17 +25,26 @@ glucoplate/
 ├── .env.local                   # local secrets, git-ignored
 │
 ├── apps/
-│   ├── web/                     # ── Vite + React single page app ──
+│   ├── backend/                 # ── the Backend API ──
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma    all seven models
+│   │   │   └── seed.ts          accounts, catalogue and sample plans
+│   │   └── src/
+│   │       ├── index.ts         entry point
+│   │       ├── env.ts           loads .env before anything reads it
+│   │       ├── app.ts           the Express app
+│   │       ├── config.ts        the environment
+│   │       ├── lib/             logger, prisma, errors, jwt, http
+│   │       └── modules/         auth · dish · plans · weight · analytics · chat · nutrients
+│   │
+│   ├── web/                     # ── the Frontend ──
 │   │   ├── index.html
 │   │   ├── vite.config.ts       # port 5173, @/ -> src, Tailwind 4
-│   │   ├── .env.local           # VITE_API_URL -> the gateway
+│   │   ├── public/_redirects    # the SPA fallback
+│   │   ├── .env.local           # VITE_API_URL -> the backend
 │   │   └── src/
 │   │       ├── main.tsx
-│   │       ├── styles.css
-│   │       ├── app/             # cross-cutting app shell
-│   │       │   ├── App.tsx      # the router
-│   │       │   ├── AuthProvider.tsx  # token + current user
-│   │       │   └── api.ts       # the one API client instance
+│   │       ├── app/             # App.tsx (the router), AuthProvider, api.ts
 │   │       ├── features/        # ── one folder per business domain ──
 │   │       │   ├── auth/        # AuthPage, AuthForm
 │   │       │   ├── overview/    # OverviewPage
@@ -44,80 +53,38 @@ glucoplate/
 │   │       │   ├── plans/       # PlansPage
 │   │       │   ├── analytics/   # AnalyticsPage
 │   │       │   ├── health/      # HealthHubPage, components/AIChat
-│   │       │   ├── settings/    # SettingsPage, components/BudgetSetup
-│   │       │   └── shared/      # DashboardLayout
+│   │       │   └── settings/    # SettingsPage, components/BudgetSetup
 │   │       └── shared/
 │   │           └── components/   # Logo, MedicalDisclaimer, ClinicianBanner
 │   │
-│   ├── mobile/                  # ── Expo / React Native ──
-│   │   ├── app.json
-│   │   ├── babel.config.js
-│   │   ├── metro.config.js
-│   │   ├── global.css           # the NativeWind entry point
-│   │   ├── .env                 # EXPO_PUBLIC_API_URL
-│   │   ├── app/                 # Expo Router routes (thin re-exports)
-│   │   │   ├── _layout.tsx
-│   │   │   ├── index.tsx
-│   │   │   ├── login.tsx
-│   │   │   └── dashboard/{index,dishes,planner,plans,analytics,health-hub,settings}/index.tsx
-│   │   └── src/
-│   │       ├── features/        # ── one folder per business domain ──
-│   │       │   ├── auth/        # LoginScreen
-│   │       │   ├── overview/    # OverviewScreen
-│   │       │   ├── catalog/     # DishesScreen, DishModal
-│   │       │   ├── planner/     # PlannerScreen
-│   │       │   ├── plans/       # PlansScreen
-│   │       │   ├── analytics/   # AnalyticsScreen
-│   │       │   ├── health/      # HealthHubScreen, AIChat, WeightTracker
-│   │       │   └── settings/    # SettingsScreen
-│   │       ├── shared/
-│   │       │   └── components/   # Logo, MedicalDisclaimer, ClinicianBanner
-│   │       └── lib/
-│   │           └── api-client.ts # wraps @glucoplate/api-client
-│   │
-│   ├── gateway/                 # ── the single entry point ──
-│   │   ├── .env
-│   │   └── src/
-│   │       ├── index.ts
-│   │       ├── env.ts
-│   │       ├── app.ts
-│   │       ├── config.ts
-│   │       ├── lib/{logger,errors,http,proxy,health}.ts
-│   │       └── modules/proxy/proxy.routes.ts   # the routing table
-│   │
-│   ├── svc-auth/                # ── accounts, JWT, budgets, limits ──
-│   │   ├── .env
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma    # User, Payment
-│   │   │   └── seed.ts
-│   │   └── src/
-│   │       ├── index.ts
-│   │       ├── env.ts
-│   │       ├── app.ts
-│   │       ├── config.ts
-│   │       ├── lib/{logger,prisma,errors,jwt,http}.ts
-│   │       └── modules/auth/{auth.routes,auth.service,auth.repository}.ts
-│   │
-│   ├── svc-catalog/             # ── the Kenyan dish catalogue ──
-│   │   ├── prisma/{schema.prisma,seed.ts}
-│   │   └── src/
-│   │       ├── ...
-│   │       └── modules/dish/{dish.routes,dish.service,dish.repository,dish.catalogue}.ts
-│   │
-│   ├── svc-planner/             # ── meal plans + the planner algorithm ──
-│   │   ├── prisma/{schema.prisma,seed.ts}
-│   │   └── src/
-│   │       ├── ...
-│   │       └── modules/plan/{plan.routes,plan.service,plan.repository}.ts
-│   │
-│   └── svc-health/              # ── weight, analytics, chat, nutrients ──
-│       ├── prisma/{schema.prisma,seed.ts}
+│   └── mobile/                  # ── the Mobile app ──
+│       ├── app.json
+│       ├── babel.config.js
+│       ├── metro.config.js
+│       ├── global.css           # the NativeWind entry point
+│       ├── .env                 # EXPO_PUBLIC_API_URL
+│       ├── app/                 # Expo Router routes (thin re-exports)
+│       │   ├── _layout.tsx
+│       │   ├── index.tsx
+│       │   ├── login.tsx
+│       │   └── dashboard/{index,dishes,planner,plans,analytics,health-hub,settings}/index.tsx
 │       └── src/
-│           ├── ...
-│           └── modules/{weight,analytics,chat,nutrients}/
+│           ├── features/        # ── one folder per business domain ──
+│           │   ├── auth/        # LoginScreen
+│           │   ├── overview/    # OverviewScreen
+│           │   ├── catalog/     # DishesScreen, DishModal
+│           │   ├── planner/     # PlannerScreen
+│           │   ├── plans/       # PlansScreen
+│           │   ├── analytics/   # AnalyticsScreen
+│           │   ├── health/      # HealthHubScreen, AIChat, WeightTracker
+│           │   └── settings/    # SettingsScreen
+│           ├── shared/
+│           │   └── components/   # Logo, MedicalDisclaimer, ClinicianBanner
+│           └── lib/
+│               └── api-client.ts # wraps @glucoplate/api-client
 │
 ├── packages/                    # ── shared, versioned, reusable ──
-│   ├── types/                   # the API contract: DTOs, enums, SERVICE_PORTS
+│   ├── types/                   # the API contract: DTOs, enums
 │   ├── domain/                  # pure business rules: planner, budget, safety copy
 │   ├── data/                    # seed fixtures: the 95 dishes, the 5 personas
 │   ├── api-client/              # typed HTTP clients + request tracing
@@ -125,87 +92,64 @@ glucoplate/
 │   └── config/                  # tsconfig.base.json, shared env helpers
 │
 ├── scripts/
-│   ├── local-postgres.mjs       # four embedded Postgres instances
-│   ├── sync-env.mjs             # fans the root .env.local out per workspace
-│   └── smoke.mjs                # cross-service end-to-end test
+│   ├── local-postgres.mjs       # the embedded local database
+│   ├── sync-env.mjs             # writes each unit's .env
+│   ├── build-units.mjs          # builds one unit, with its dependencies
+│   ├── db-units.mjs             # the database tasks
+│   ├── smoke.mjs                # the API, end to end
+│   ├── audit-endpoints.mjs      # every endpoint, and that auth is enforced
+│   ├── test-swap.mjs            # the swap-and-save flow
+│   └── test-clients.mjs         # both clients, against the API
 │
 └── docs/
-    ├── SERVICE-TEMPLATE.md      # how to write a new service
-    ├── MONOREPO.md              # this file
-    └── SESSION-1-SETUP.md       # local setup + deploy walkthrough
+    ├── SERVICES.md              # the three services: build, run, environment
+    ├── DEPLOY.md                # the click-by-click Render steps
+    ├── SERVICE-TEMPLATE.md      # how to write a new module
+    └── SESSION-*.md             # what each session changed
 ```
 
-### Why the gateway exists
-
-The four services are genuinely independent — each owns its own database, its
-own routes and its own port, and each can be started, stopped and debugged on
-its own. The **gateway** is a thin reverse proxy in front of them so that:
-
-- the web and mobile clients only ever need **one** base URL;
-- a request can be **traced across every service it touched** from one place;
-- a service can be swapped or scaled independently without the clients
-  knowing.
-
-The gateway contains no business logic and no database. Talking to a service
-directly is always supported and is the normal way to debug one.
+**📖 [SERVICES.md](SERVICES.md)** has the commands and the environment
+variables for each of the three units.
 
 ---
 
-## 2. What moved where
+## 2. Why the backend is one process
 
-| From (the old single Next.js app) | To |
-|---|---|
-| `src/app/api/auth/*` | `apps/svc-auth/src/modules/auth/` |
-| `src/app/api/user/*`, `src/app/api/settings` | `apps/svc-auth/src/modules/auth/auth.routes.ts` |
-| `src/app/api/dishes/*` | `apps/svc-catalog/src/modules/dish/` |
-| `src/app/api/plans/*` | `apps/svc-planner/src/modules/plan/` |
-| `src/app/api/weight`, `analytics`, `chat`, `nutrients` | `apps/svc-health/src/modules/` |
-| `src/app/dashboard/*` (web pages) | `apps/web/src/features/<domain>/` |
-| `src/app/login/*` | `apps/web/src/features/auth/` |
-| `src/components/*` | `apps/web/src/shared/components/` **and** `apps/mobile/src/shared/components/` |
-| `src/expo-app/*` | `apps/mobile/app/` (routes) + `apps/mobile/src/features/` (screens) |
-| `src/db/schema.ts` (Drizzle) | one `prisma/schema.prisma` per service |
-| `src/lib/planner.ts`, `budget.ts`, `medical.ts`, `format.ts` | `packages/domain/` |
-| `src/lib/types.ts` | `packages/types/` |
-| `src/lib/jwt.ts`, `auth.ts` | `apps/svc-auth/src/lib/jwt.ts` (+ a copy in every service that verifies tokens) |
-| `src/lib/data/*.json` | `packages/data/src/` |
-| `src/proxy.ts` (Next middleware) | `apps/gateway/` (a real proxy instead of a header injector) |
-| `next.config.ts`, `postcss.config.mjs`, `drizzle.config.ts` | deleted — the old toolchain is gone |
+The backend was five services (a gateway and four domain services) before.
+That is more moving parts than the problem needed:
 
-### Adding a new service
+- The planner had to fetch the catalogue and the user profile over HTTP, with
+  a cache, a timeout and a fallback, because a sleeping downstream service
+  must not make the caller wait.
+- Five services meant five Prisma clients, five sets of pool settings and
+  five databases' worth of connections against one branch.
+- The gateway kept a routing table that had to stay in step with the code, and
+  a 404 was the failure mode whenever it did not.
 
-See **[docs/SERVICE-TEMPLATE.md](SERVICE-TEMPLATE.md)**. The short version:
+Now it is **one process, one database client, one port**. The feature modules
+under `src/modules/` still keep their boundaries, so the code stays organised,
+but they call each other with ordinary function calls. Generating a plan is
+two queries instead of two network round trips, and a plan no longer has a
+sixty-second cache between the caller and the numbers.
 
-```bash
-mkdir -p apps/svc-<name>/{src/lib,src/modules/<name>,prisma}
-cp -r apps/svc-auth/src/lib apps/svc-<name>/src/
-# then: package.json, prisma/schema.prisma, src/config.ts, src/modules/<name>/
-npm run env:sync
-npm run db:generate --workspace=@glucoplate/svc-<name>
-npm run db:push     --workspace=@glucoplate/svc-<name>
-```
-
-Add it to `SERVICE_PORTS` in `packages/types`, to `SERVICE_PORTS`/`DB_PORTS` in
-`scripts/sync-env.mjs`, and to the routing table in `apps/gateway/src/routes.ts`.
+The deployment is the same shape: one Render Web Service, one Neon database,
+one `DATABASE_URL`.
 
 ---
 
 ## 3. Multi-client debugging
 
-The question "did this come from the web app, the mobile app, or which
-backend service?" is answered by the **request id**.
-
-### How it works
+The question "did this come from the web app, the mobile app, or the
+backend?" is answered by the **request id**.
 
 1. The client generates an `x-request-id` and sends it with every request.
-2. Every service logs that id with the method, path, status and duration.
-3. The gateway forwards the id to the upstream and adds `x-upstream` to the
-   response, so the client can see which service answered.
-4. The gateway logs the upstream's name next to the id.
+2. The API echoes it back on the response, logs it with the method, path,
+   status and duration, and includes it in every error body.
+3. If a client does not send one, the API generates it — so a request from
+   `curl` is traceable too.
 
-So a single id ties together: the browser request, the gateway hop, the
-service that handled it, and any service-to-service call in between
-(svc-planner → svc-catalog, svc-health → svc-planner).
+So one id ties together the browser request, the API's log line and the error
+the user saw.
 
 ### Turning on client-side logging
 
@@ -217,10 +161,10 @@ VITE_DEBUG_API=true
 EXPO_PUBLIC_DEBUG=true
 ```
 
-Every request and response is then printed to the console with its id:
+Every request and response is then printed with its id:
 
 ```
-[api:web] → POST http://127.0.0.1:4000/api/auth/login {"requestId":"req_a1b2c3","service":"gateway"}
+[api:web] → POST http://127.0.0.1:4000/api/auth/login {"requestId":"req_a1b2c3"}
 [api:web] 200 POST http://127.0.0.1:4000/api/auth/login (42ms) {"requestId":"req_a1b2c3"}
 ```
 
@@ -231,48 +175,28 @@ LOG_LEVEL=debug   # debug | info | warn | error | silent
 ```
 
 ```
-2026-10-19T22:56:15.708Z INFO  gateway    GET /api/plans 200 {"requestId":"req_x1y2z3","upstream":"planner","durationMs":31}
-2026-10-19T22:56:15.712Z INFO  svc-planner GET /api/plans 200 {"requestId":"req_x1y2z3","durationMs":12}
+2026-10-21T19:25:01.255Z INFO  glucoplate-api GET /api/plans 200 {"requestId":"req_x1y2z3","durationMs":31}
 ```
 
-Both lines share `req_x1y2z3`. That is the whole trace.
-
-### Following one request
+### The health check
 
 ```bash
-# 1. make a request and note the id
-curl -i http://127.0.0.1:4000/api/plans -H "Authorization: Bearer $TOKEN"
-
-# 2. grep every service's output for that id
-grep "req_x1y2z3" service-logs/*.log
+curl http://127.0.0.1:4000/api/health
+# {"ok":true,"service":"glucoplate-api","database":"connected"}
 ```
+
+It returns 503 when the database is unreachable, so "up" and "up but broken"
+are different answers.
 
 ### Isolating a problem
 
 | Symptom | Where to look |
 |---|---|
 | The UI shows an error before any request | The web/mobile console. Turn on `VITE_DEBUG_API` / `EXPO_PUBLIC_DEBUG`. |
-| The request never reaches a service | The gateway log — the route table in `apps/gateway/src/routes.ts`. |
-| The service returns 500 | That service's log. The `requestId` in the error body matches the client's. |
-| The service is up but the data is wrong | The service's own database. Each service has its own. |
-| A service-to-service call fails | Look for the upstream's name in the calling service's log. |
-
-### The health check
-
-```bash
-curl http://127.0.0.1:4000/api/health
-```
-
-```json
-{
-  "ok": true,
-  "service": "gateway",
-  "upstream": { "auth": true, "catalog": true, "planner": true, "health": true }
-}
-```
-
-Each service also answers on its own port, and returns 503 when its database
-is unreachable — so "up" and "up but broken" are different answers.
+| The request never reaches the API | The client's `VITE_API_URL` / `EXPO_PUBLIC_API_URL`. A phone cannot reach `localhost`. |
+| The API returns 500 | The API's log, with the `requestId` from the error body. |
+| The API is up but the data is wrong | The database. One database, seeded with `npm run db:seed`. |
+| The build works locally but fails on the host | The host's `DATABASE_URL` and `DIRECT_DATABASE_URL` — `prisma generate` validates them. |
 
 ---
 
@@ -281,49 +205,31 @@ is unreachable — so "up" and "up but broken" are different answers.
 ```jsonc
 {
   "scripts": {
-    // ── everything at once ───────────────────────────────────────────
-    "dev":              "turbo run dev --parallel",
+    "dev":                 "turbo run dev --parallel",
+    "dev:backend":         "turbo run dev --filter=@glucoplate/backend",
+    "dev:web":             "turbo run dev --filter=@glucoplate/web",
+    "dev:mobile":          "turbo run dev --filter=@glucoplate/mobile",
+    "dev:web+backend":     "turbo run dev --filter=@glucoplate/web --filter=@glucoplate/backend",
+    "dev:mobile+backend":  "turbo run dev --filter=@glucoplate/mobile --filter=@glucoplate/backend",
 
-    // ── one client ───────────────────────────────────────────────────
-    "dev:web":         "turbo run dev --filter=@glucoplate/web",
-    "dev:mobile":      "turbo run dev --filter=@glucoplate/mobile",
+    "build:backend":       "node scripts/build-units.mjs backend",
+    "build:web":           "node scripts/build-units.mjs web",
+    "build:mobile":        "node scripts/build-units.mjs mobile",
 
-    // ── one service ───────────────────────────────────────────────────
-    "dev:gateway":     "turbo run dev --filter=@glucoplate/gateway",
-    "dev:auth":        "turbo run dev --filter=@glucoplate/svc-auth",
-    "dev:catalog":     "turbo run dev --filter=@glucoplate/svc-catalog",
-    "dev:planner":     "turbo run dev --filter=@glucoplate/svc-planner",
-    "dev:health":      "turbo run dev --filter=@glucoplate/svc-health",
+    "db:local":            "node scripts/local-postgres.mjs",
+    "db:local:reset":      "node scripts/local-postgres.mjs --reset",
+    "env:sync":           "node scripts/sync-env.mjs",
+    "db:generate":         "node scripts/db-units.mjs generate",
+    "db:push":             "node scripts/db-units.mjs push",
+    "db:seed":             "node scripts/db-units.mjs seed",
 
-    // ── a client next to ONE service (the debugging pair) ────────────
-    "dev:web+planner": "turbo run dev --filter=@glucoplate/web --filter=@glucoplate/svc-planner",
-    "dev:mobile+gateway": "turbo run dev --filter=@glucoplate/mobile --filter=@glucoplate/gateway",
-
-    // ── the backend as a group ───────────────────────────────────────
-    "dev:backend":     "turbo run dev --filter=@glucoplate/svc-* --filter=@glucoplate/gateway --parallel",
-
-    // ── quality gates ────────────────────────────────────────────────
-    "build":           "turbo run build",
-    "lint":            "turbo run lint",
-    "typecheck":       "turbo run typecheck",
-    "test":            "turbo run test",
-    "clean":           "turbo run clean",
-
-    // ── databases ─────────────────────────────────────────────────────
-    "db:local":        "node scripts/local-postgres.mjs",
-    "db:local:reset":  "node scripts/local-postgres.mjs --reset",
-    "env:sync":        "node scripts/sync-env.mjs",
-    "db:generate":     "turbo run db:generate",
-    "db:push":         "turbo run db:push",
-    "db:seed":         "turbo run db:seed",
-
-    // ── the end-to-end test ───────────────────────────────────────────
-    "smoke":           "node scripts/smoke.mjs",
-    "audit":           "node scripts/audit-endpoints.mjs",
-    "test:swap":       "node scripts/test-swap.mjs",
-
-    // ── one-shot setup ────────────────────────────────────────────────
-    "setup":           "npm install && npm run env:sync && npm run db:generate && npm run db:push && npm run db:seed"
+    "lint":                "turbo run lint",
+    "typecheck":           "turbo run typecheck",
+    "test":                "turbo run test",
+    "smoke":               "node scripts/smoke.mjs",
+    "audit":               "node scripts/audit-endpoints.mjs",
+    "test:swap":           "node scripts/test-swap.mjs",
+    "test:clients":        "node scripts/test-clients.mjs"
   }
 }
 ```
@@ -333,106 +239,45 @@ is unreachable — so "up" and "up but broken" are different answers.
 | Goal | Command |
 |---|---|
 | Work on the web app with everything running | `npm run dev` |
-| Debug one service in isolation | `npm run dev:planner` (plus its database) |
-| Debug the web app against one service | `npm run dev:web+planner` |
-| Change the shared contract and see it ripple | `npm run dev` — the packages rebuild on change |
-| Check the whole system | `npm run smoke` |
-
-### How the pieces start up
-
-```
-npm run db:local      # terminal 1 — an embedded Postgres, no install needed
-npm run env:sync      # terminal 2 — writes each service's .env
-npm run db:generate   # terminal 2 — one Prisma client per service
-npm run db:push       # terminal 2 — creates the schema in the database
-npm run db:seed       # terminal 2 — 95 dishes, 6 accounts, 12 sample plans
-npm run dev           # terminal 2 — the gateway, the four services, the web app
-```
-
-`npm run dev:mobile` starts Expo Go instead of the web app.
-
-**Pointing at the hosted database instead of the local one:**
-
-```bash
-npm run env:sync -- --neon   # the services use the hosted database
-npm run db:push -- --neon    # and the schema goes there too
-```
-
-Use the same flag for both, or the services and the schema will not agree.
+| Debug the API and the web app together | `npm run dev:web+backend` |
+| Build one unit for a host | `npm run build:web` (or `build:backend`, `build:mobile`) |
+| Check the whole system | `npm run smoke` and `npm run audit` |
+| Check both clients against the API | `npm run test:clients` |
 
 ---
 
-## 5. Ports and databases
+## 5. The connection configuration
 
-| Service | Port | Tables it owns |
-|---|---|---|
-| gateway | 4000 | — |
-| svc-auth | 4001 | `User`, `Payment` |
-| svc-catalog | 4002 | `Dish` |
-| svc-planner | 4003 | `MealPlan`, `MealPlanItem` |
-| svc-health | 4004 | `WeightLog`, `WeightTarget` |
-| web (Vite) | 5173 | — |
-| mobile (Expo) | 8081 | — |
-
-The ports live in one place: `SERVICE_PORTS` in `packages/types`. Nothing
-else hard-codes a port.
-
-### One database, four owners
-
-All four services point at **the same Postgres**. Neon is the hosted one;
-`npm run db:local` gives you a local one.
-
-The service boundary is kept in two places rather than in the database:
-
-1. **Each service has its own `prisma/schema.prisma`** with only the models
-   it owns, and generates its client into its own folder
-   (`apps/<service>/generated/prisma`). A service therefore *physically
-   cannot* read or write another service's tables — the model is not in its
-   client.
-2. **`prisma/schema.prisma` at the repository root** is the union of the four
-   schemas, and it is what `prisma db push` applies. It is **generated** by
-   `npm run db:schema`, so the two can never drift apart.
-
-A service that needs another service's data calls its HTTP API and caches the
-answer for 60 seconds:
-
-- `svc-planner` → `svc-catalog` for the dish catalogue, and → `svc-auth` for
-  the caller's limits.
-- `svc-health` → `svc-planner` for saved plans (analytics).
-
-If an upstream is unreachable the cached copy is served, and only a cold
-service with no cache returns a 503.
-
-### The connection configuration is the part that bites
-
-Neon Free allows only a handful of concurrent connections per branch, and
-**four services share one database**. Getting this wrong does not fail
+The hosted database allows only a handful of concurrent connections per
+branch, and the whole backend shares one. Getting this wrong does not fail
 loudly — it fails *slowly*, with queries that take fifteen seconds and
 `Server has closed the connection` errors, because the pool is exhausted and
-Neon is closing connections the services are still holding.
+the host is closing connections the API is still holding.
 
 What actually works, measured against the live database:
 
 | Setting | Why |
 |---|---|
-| **Direct endpoint** (hostname without `-pooler`) at runtime | Measured roughly **three times faster** than the pooled endpoint (0.5 s vs 1.8 s for the same query). With a small client pool the pooler only gets in the way. |
-| `connection_limit=1` | One connection per service, four in total — comfortably inside the free limit. |
-| `connect_timeout=15` | Neon scales to zero; waking the compute takes seconds. |
+| **Direct endpoint** (hostname without `-pooler`) | Measured roughly **three times faster** than the pooled endpoint (0.5 s vs 1.8 s for the same query). With a small client pool the pooler only gets in the way. |
+| `connection_limit=1` | One connection for the whole backend, well inside the free limit. |
+| `connect_timeout=15` | The host scales to zero; waking the compute takes seconds. |
 | `pool_timeout=15` | Do not fail fast while the pool is busy. |
 | `pgbouncer=true` | **Only** for a pooled endpoint. It disables prepared statements, which the pooler cannot support — but on a direct connection it is an unnecessary slowdown. |
-| `POOLED_DATABASE_URL` | Kept alongside for a serverless deployment, where many short-lived processes need to share a small number of connections. |
 
-The upstream HTTP timeouts are generous for the same reason: the gateway waits
-30 s for an upstream and 20 s for a health probe. A short timeout reports a
-healthy service as down while Neon is waking up.
+The pooled string is kept as `POOLED_DATABASE_URL` for a serverless
+deployment, where many short-lived processes need to share a few connections.
+
+> **One lesson worth keeping:** `npm run db:push` and `npm run db:seed` must
+> point at the same database. Use the same flag for both —
+> `npm run env:sync -- --neon` and `npm run db:push -- --neon` — or the schema
+> goes to one place and the data to another.
 
 ---
 
 ## 6. Rules of the road
 
-1. **A service never reads another service's tables.** It calls the API. The
-   boundary is enforced by the schema: a service's Prisma client only has the
-   models it owns.
+1. **One backend, one database.** A module never reads another module's
+   tables directly; it calls the function that owns them.
 2. **Every route lives in a feature module** under `src/modules/<domain>/`.
 3. **Ownership is enforced in the query** — `where: { id, userId }`, never in
    the UI.
@@ -443,14 +288,14 @@ healthy service as down while Neon is waking up.
 6. **The contract lives in `packages/types`.** If a request or a response
    changes, change it there first and the compiler finds every consumer.
 7. **Business rules live in `packages/domain`** — pure functions, no HTTP, no
-   SQL, no framework. Both the services and the clients use them.
+   SQL, no framework. Both the backend and the clients use them.
 8. **Money is KES.** Use `money()` from `@glucoplate/domain`.
 9. **Never commit secrets.** `.env.local` and every `apps/*/.env` are
    git-ignored; `.env.example` is the only env file that is tracked.
 10. **Safety copy is never hand-written.** Use `PLANNING_AID_NOTICE` and
     `clinicianBannerFor()` from `@glucoplate/domain`.
-11. **A new endpoint touches three places:** the service that owns it,
-    `apps/gateway/src/routes.ts` (the routing table) and
-    `packages/types/src/index.ts` (the contract). `npm run audit` catches a
-    missing route, and `npm run test:clients` catches a client that reads a
-    field the API does not return.
+11. **A new endpoint touches three places:** the module that owns it,
+    `packages/types/src/index.ts` (the contract) and — if the clients use it —
+    `packages/api-client/src/index.ts`. `npm run audit` catches a missing
+    route, and `npm run test:clients` catches a client that reads a field the
+    API does not return.

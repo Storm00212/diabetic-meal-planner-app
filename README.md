@@ -14,40 +14,40 @@ mechanic, a retired teacher and a smallholder farmer.
 
 ## 🏗️ Architecture
 
-A **Turborepo monorepo**: two frontends, one gateway, four domain services
-sharing one database, and a set of shared packages holding the contract
-between them.
+A **Turborepo monorepo** with three deployable units and a set of shared
+packages holding the contract between them.
 
 ```
 apps/
-├── web/          Vite + React single page app        (port 5173)
-├── mobile/       Expo / React Native                 (Expo Go)
-├── gateway/      the single entry point               (port 4000)
-├── svc-auth/     accounts, JWT, budgets, limits       (port 4001)
-├── svc-catalog/  the Kenyan dish catalogue            (port 4002)
-├── svc-planner/  meal plans + the planner algorithm   (port 4003)
-└── svc-health/   weight, analytics, chat, nutrients   (port 4004)
+├── backend/     The Backend API — one Express app, one database  :4000
+├── web/         The Frontend — Vite + React single page app      :5173
+└── mobile/      The Mobile app — Expo / React Native          Expo Go
 
 packages/
-├── types/        the API contract: DTOs, enums, SERVICE_PORTS
-├── domain/       pure business rules: planner, budget, safety copy
-├── data/         seed fixtures: the 95 dishes, the 5 personas
-├── api-client/   typed HTTP clients + request tracing
-├── ui/           design tokens shared by web and mobile
-└── config/       shared tsconfig and env helpers
+├── types/        the API contract: DTOs, enums, request and response shapes
+├── domain/      pure business rules: planner, budget maths, safety copy
+├── data/        seed fixtures: the 95 dishes, the 5 personas
+├── api-client/  the typed HTTP client both clients use, with request tracing
+├── ui/          design tokens shared by web and mobile
+└── config/      shared tsconfig and environment helpers
 ```
 
-Each service owns its **own tables** — each generates a Prisma client for only
-the models it owns, so a service physically cannot touch another service's
-data. Where one service needs another's data it calls its HTTP API. The
-**gateway** is a thin reverse proxy, so both clients only need one base URL
-and a single `x-request-id` traces a request through every service it
-touched.
+The backend is **one process, one database client, one port**. Its feature
+modules (`auth`, `dish`, `plans`, `weight`, `analytics`, `chat`, `nutrients`)
+keep their boundaries and call each other with ordinary function calls, so
+generating a plan is two queries rather than two network round trips.
 
-Hosting: **Neon Free** (Postgres) + **Render Free** (web service) — both $0.
-All four services share one Neon database, so the connection string needs
-`?pgbouncer=true&connection_limit=2&connect_timeout=15&pool_timeout=15` to
-stay inside Neon's ten-connection limit.
+Both clients talk to the same backend through the same typed client, and every
+request carries an `x-request-id` that the API echoes, logs and returns in
+error bodies — so one id follows a request from the browser into the log.
+
+Hosting: **Neon Free** (Postgres) + **Render Free** (web service + static
+site) — all $0.
+
+📖 **[docs/SERVICES.md](docs/SERVICES.md)** — the commands and environment
+variables for each of the three units.
+📖 **[docs/MONOREPO.md](docs/MONOREPO.md)** — the file tree, the debugging
+setup and the rules of the road.
 
 📖 **[docs/MONOREPO.md](docs/MONOREPO.md)** — the full blueprint, the file
 tree, the debugging setup and every root script.
@@ -88,18 +88,19 @@ cd diabetic-meal-planner-app
 npm install
 
 cp .env.example .env.local     # then edit DATABASE_URL and JWT_SECRET
-npm run env:sync               # writes each workspace's own .env
+npm run env:sync               # writes each unit's own .env
 
 # terminal 1
-npm run db:local               # four embedded Postgres instances, no install needed
+npm run db:local               # an embedded Postgres, no install needed
 
 # terminal 2
 npm run db:generate && npm run db:push && npm run db:seed
-npm run dev                    # the gateway, the four services and the web app
+npm run dev                    # the backend, the web app and Expo together
 ```
 
 Open <http://localhost:5173>. The full walkthrough, the hosting setup and the
-demo script: **[docs/SESSION-1-SETUP.md](docs/SESSION-1-SETUP.md)**
+demo script: **[docs/SERVICES.md](docs/SERVICES.md)** and
+**[docs/DEPLOY.md](docs/DEPLOY.md)**
 
 ### Demo accounts
 
