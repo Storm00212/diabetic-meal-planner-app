@@ -1,9 +1,0 @@
-{
-  "extends": "@glucoplate/config/tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["node"],
-    "noEmit": true,
-    "allowImportingTsExtensions": true
-  },
-  "include": ["src/**/*.ts"]
-}

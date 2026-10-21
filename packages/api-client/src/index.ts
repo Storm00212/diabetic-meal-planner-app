@@ -32,7 +32,6 @@ import type {
   PortionTargets,
   PublicUser,
   RegisterRequest,
-  ServiceName,
   SwapCandidate,
   UpdateBudgetRequest,
   UpdatePlanItemRequest,
@@ -43,14 +42,14 @@ import type {
   WeightTargets,
 } from "@glucoplate/types";
 
-export type { ServiceName };
 
 /** A failed API call, with enough detail to debug it. */
 export class ApiClientError extends Error {
   readonly status: number;
   readonly code?: string;
   readonly requestId?: string;
-  readonly service: ServiceName | "gateway";
+  /** Which client made the call: "web", "mobile" or a script. */
+  readonly client: string;
 
   constructor(
     message: string,
@@ -58,7 +57,7 @@ export class ApiClientError extends Error {
       status: number;
       code?: string;
       requestId?: string;
-      service: ServiceName | "gateway";
+      service: string;
     },
   ) {
     super(message);
@@ -66,73 +65,31 @@ export class ApiClientError extends Error {
     this.status = options.status;
     this.code = options.code;
     this.requestId = options.requestId;
-    this.service = options.service;
+    this.client = options.service;
   }
 }
 
-/** The base URL of each service, resolved from the environment. */
-export type ServiceUrls = Record<ServiceName, string>;
-
-export const DEFAULT_SERVICE_URLS: ServiceUrls = {
-  gateway: "http://127.0.0.1:4000",
-  auth: "http://127.0.0.1:4001",
-  catalog: "http://127.0.0.1:4002",
-  planner: "http://127.0.0.1:4003",
-  health: "http://127.0.0.1:4004",
-};
+/** The default API URL, used when nothing is configured. */
+export const DEFAULT_API_URL = "http://127.0.0.1:4000";
 
 /**
- * Builds the service URL map from environment variables.
+ * Resolves the one base URL every request goes to.
  *
- * The web app reads `VITE_*`, the mobile app reads `EXPO_PUBLIC_*`, and the
- * gateway reads plain names. Pass the resolved values in.
+ * There is a single Backend API, so a client needs one address. The web app
+ * reads `VITE_API_URL`, the mobile app reads `EXPO_PUBLIC_API_URL`, and a
+ * script can pass `API_URL`.
  */
-export function resolveServiceUrls(source: {
+export function resolveApiUrl(source: {
   VITE_API_URL?: string;
-  VITE_SVC_AUTH_URL?: string;
-  VITE_SVC_CATALOG_URL?: string;
-  VITE_SVC_PLANNER_URL?: string;
-  VITE_SVC_HEALTH_URL?: string;
   EXPO_PUBLIC_API_URL?: string;
-  EXPO_PUBLIC_SVC_AUTH_URL?: string;
-  EXPO_PUBLIC_SVC_CATALOG_URL?: string;
-  EXPO_PUBLIC_SVC_PLANNER_URL?: string;
-  EXPO_PUBLIC_SVC_HEALTH_URL?: string;
-  SVC_AUTH_URL?: string;
-  SVC_CATALOG_URL?: string;
-  SVC_PLANNER_URL?: string;
-  SVC_HEALTH_URL?: string;
-  GATEWAY_URL?: string;
-} = {}): ServiceUrls {
-  const gateway =
+  API_URL?: string;
+} = {}): string {
+  return (
     source.VITE_API_URL ??
     source.EXPO_PUBLIC_API_URL ??
-    source.GATEWAY_URL ??
-    DEFAULT_SERVICE_URLS.gateway;
-
-  return {
-    gateway,
-    auth:
-      source.VITE_SVC_AUTH_URL ??
-      source.EXPO_PUBLIC_SVC_AUTH_URL ??
-      source.SVC_AUTH_URL ??
-      DEFAULT_SERVICE_URLS.auth,
-    catalog:
-      source.VITE_SVC_CATALOG_URL ??
-      source.EXPO_PUBLIC_SVC_CATALOG_URL ??
-      source.SVC_CATALOG_URL ??
-      DEFAULT_SERVICE_URLS.catalog,
-    planner:
-      source.VITE_SVC_PLANNER_URL ??
-      source.EXPO_PUBLIC_SVC_PLANNER_URL ??
-      source.SVC_PLANNER_URL ??
-      DEFAULT_SERVICE_URLS.planner,
-    health:
-      source.VITE_SVC_HEALTH_URL ??
-      source.EXPO_PUBLIC_SVC_HEALTH_URL ??
-      source.SVC_HEALTH_URL ??
-      DEFAULT_SERVICE_URLS.health,
-  };
+    source.API_URL ??
+    DEFAULT_API_URL
+  ).replace(/\/$/, "");
 }
 
 /** A short, unique-enough identifier for tracing one request. */
@@ -142,9 +99,9 @@ export function newRequestId(): string {
 }
 
 export type ClientOptions = {
-  /** The service this client talks to. Used in logs and error messages. */
-  service: ServiceName | "gateway";
-  /** Base URL of the service. */
+  /** A label for this client, used in logs and error messages. */
+  service: string;
+  /** The base URL of the Backend API. */
   baseUrl: string;
   /** Called before each request so the client can attach an auth token. */
   getToken?: () => string | null | undefined | Promise<string | null | undefined>;

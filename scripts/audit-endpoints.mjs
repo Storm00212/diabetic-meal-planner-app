@@ -11,15 +11,7 @@
  *   node scripts/audit-endpoints.mjs
  */
 
-const GATEWAY = (process.argv[2] ?? "http://127.0.0.1:4000").replace(/\/$/, "");
-
-const SERVICES = {
-  gateway: GATEWAY,
-  auth: "http://127.0.0.1:4001",
-  catalog: "http://127.0.0.1:4002",
-  planner: "http://127.0.0.1:4003",
-  health: "http://127.0.0.1:4004",
-};
+const API = (process.argv[2] ?? "http://127.0.0.1:4000").replace(/\/$/, "");
 
 let failures = 0;
 let checks = 0;
@@ -32,7 +24,7 @@ function check(label, condition, detail = "") {
   );
 }
 
-async function call(path, { method = "GET", body, token, base = GATEWAY } = {}) {
+async function call(path, { method = "GET", body, token, base = API } = {}) {
   const response = await fetch(`${base}${path}`, {
     method,
     headers: {
@@ -69,27 +61,27 @@ const testDish = {
   glycemicIndex: 45,
 };
 
-console.log(`\nGlucoPlate endpoint audit against ${GATEWAY}\n`);
+console.log(`\nGlucoPlate endpoint audit against ${API}\n`);
 
 // ---------------------------------------------------------------------------
-// 1. Health and discovery on every service
+// 1. Health and discovery
 // ---------------------------------------------------------------------------
 console.log("Health and discovery");
-for (const [name, base] of Object.entries(SERVICES)) {
-  const health = await call("/api/health", { base });
-  check(
-    `${name.padEnd(8)} GET /api/health`,
-    health.status === 200 && health.json?.ok === true,
-    JSON.stringify(health.json),
-  );
+const backendHealth = await call("/api/health");
+check(
+  "GET /api/health",
+  backendHealth.status === 200 &&
+    backendHealth.json?.ok === true &&
+    backendHealth.json?.service === "glucoplate-api",
+  JSON.stringify(backendHealth.json),
+);
 
-  const root = await call("/", { base });
-  check(
-    `${name.padEnd(8)} GET /`,
-    root.status === 200 && root.json?.service !== undefined,
-    JSON.stringify(root.json).slice(0, 90),
-  );
-}
+const backendRoot = await call("/");
+check(
+  "GET / lists the modules",
+  backendRoot.status === 200 && Array.isArray(backendRoot.json?.modules),
+  JSON.stringify(backendRoot.json?.modules ?? []).slice(0, 90),
+);
 
 // ---------------------------------------------------------------------------
 // 2. Authentication
@@ -182,7 +174,7 @@ for (const [method, path] of PROTECTED) {
 // 4. svc-auth
 // ---------------------------------------------------------------------------
 console.log("\nsvc-auth");
-const profile = await call("/api/user/profile", { token, base: SERVICES.auth });
+const profile = await call("/api/user/profile", { token });
 check(
   "GET /api/user/profile -> 200",
   profile.status === 200 && profile.json?.email === email,
@@ -192,12 +184,11 @@ check(
 const patchedProfile = await call("/api/user/profile", {
   method: "PATCH",
   token,
-  base: SERVICES.auth,
   body: { allergies: "peanuts", dislikes: "liver" },
 });
 check("PATCH /api/user/profile -> 200", patchedProfile.status === 200);
 
-const budget = await call("/api/user/budget", { token, base: SERVICES.auth });
+const budget = await call("/api/user/budget", { token });
 check(
   "GET /api/user/budget -> 200",
   budget.status === 200 && typeof budget.json?.budgetAmount === "number",
@@ -207,12 +198,11 @@ check(
 const patchedBudget = await call("/api/user/budget", {
   method: "PATCH",
   token,
-  base: SERVICES.auth,
   body: { budgetAmount: 1400, budgetPeriod: "weekly" },
 });
 check("PATCH /api/user/budget -> 200", patchedBudget.status === 200);
 
-const settings = await call("/api/settings", { token, base: SERVICES.auth });
+const settings = await call("/api/settings", { token });
 check("GET /api/settings -> 200", settings.status === 200);
 check(
   "the user carries a portion profile",
@@ -222,7 +212,6 @@ check(
 
 const portionTargets = await call("/api/user/portion-targets", {
   token,
-  base: SERVICES.auth,
 });
 check(
   "GET /api/user/portion-targets -> 200 with the targets",
@@ -240,7 +229,6 @@ check(
 const patchedSettings = await call("/api/settings", {
   method: "PATCH",
   token,
-  base: SERVICES.auth,
   body: { name: "Audit User", dailyBudget: 250 },
 });
 check("PATCH /api/settings -> 200", patchedSettings.status === 200);
@@ -249,7 +237,7 @@ check("PATCH /api/settings -> 200", patchedSettings.status === 200);
 // 5. svc-catalog
 // ---------------------------------------------------------------------------
 console.log("\nsvc-catalog");
-const dishes = await call("/api/dishes", { token, base: SERVICES.catalog });
+const dishes = await call("/api/dishes", { token });
 const list = dishes.json?.dishes ?? [];
 check("GET /api/dishes -> 200", dishes.status === 200);
 check("the catalogue is populated", list.length >= 90, `count=${list.length}`);
@@ -262,7 +250,7 @@ check(
   list.every((dish) => typeof dish.region === "string" && dish.region.length > 0),
 );
 
-const stats = await call("/api/dishes/stats", { token, base: SERVICES.catalog });
+const stats = await call("/api/dishes/stats", { token });
 check(
   "GET /api/dishes/stats -> 200",
   stats.status === 200 && typeof stats.json?.total === "number",
@@ -273,7 +261,6 @@ check(
 const highGiDish = list.find((dish) => dish.glycemicIndex > 30);
 const swap = await call(`/api/dishes/${highGiDish.id}/swap?limit=3`, {
   token,
-  base: SERVICES.catalog,
 });
 check("GET /api/dishes/:id/swap -> 200", swap.status === 200);
 check(
@@ -297,14 +284,12 @@ check(
 );
 const swapMissing = await call("/api/dishes/999999/swap", {
   token,
-  base: SERVICES.catalog,
 });
 check("GET /api/dishes/:id/swap for a missing dish -> 404", swapMissing.status === 404);
 
 const created = await call("/api/dishes", {
   method: "POST",
   token,
-  base: SERVICES.catalog,
   body: testDish,
 });
 check(
@@ -317,7 +302,6 @@ const dishId = created.json?.dish?.id;
 const updated = await call(`/api/dishes/${dishId}`, {
   method: "PATCH",
   token,
-  base: SERVICES.catalog,
   body: { cost: 55, glycemicIndex: 40 },
 });
 check(
@@ -329,14 +313,12 @@ check(
 const deleted = await call(`/api/dishes/${dishId}`, {
   method: "DELETE",
   token,
-  base: SERVICES.catalog,
 });
 check("DELETE /api/dishes/:id -> 200", deleted.status === 200);
 
 const deletedTwice = await call(`/api/dishes/${dishId}`, {
   method: "DELETE",
   token,
-  base: SERVICES.catalog,
 });
 check("DELETE /api/dishes/:id twice -> 404", deletedTwice.status === 404);
 
@@ -345,7 +327,6 @@ const catalogueDish = list.find((d) => d.userId === null);
 const patchCatalogue = await call(`/api/dishes/${catalogueDish.id}`, {
   method: "PATCH",
   token,
-  base: SERVICES.catalog,
   body: { cost: 1 },
 });
 check(
@@ -361,7 +342,6 @@ console.log("\nsvc-planner");
 const generated = await call("/api/plans/generate", {
   method: "POST",
   token,
-  base: SERVICES.planner,
   body: {},
 });
 check("POST /api/plans/generate -> 200", generated.status === 200);
@@ -383,7 +363,6 @@ check(
 const saved = await call("/api/plans", {
   method: "POST",
   token,
-  base: SERVICES.planner,
   body: {},
 });
 check(
@@ -393,7 +372,7 @@ check(
 );
 const planId = saved.json?.plan?.id;
 
-const plans = await call("/api/plans", { token, base: SERVICES.planner });
+const plans = await call("/api/plans", { token });
 check(
   "GET /api/plans -> 200 with items",
   plans.status === 200 && (plans.json?.plans ?? []).some((p) => p.items?.length),
@@ -409,7 +388,6 @@ const itemId = plans.json?.plans?.[0]?.items?.[0]?.id;
 const updateItem = await call("/api/plans/update-item", {
   method: "PATCH",
   token,
-  base: SERVICES.planner,
   body: { itemId, status: "eaten" },
 });
 check(
@@ -421,7 +399,6 @@ check(
 const badStatus = await call("/api/plans/update-item", {
   method: "PATCH",
   token,
-  base: SERVICES.planner,
   body: { itemId, status: "invented" },
 });
 check("PATCH /api/plans/update-item with a bad status -> 400", badStatus.status === 400);
@@ -429,14 +406,12 @@ check("PATCH /api/plans/update-item with a bad status -> 400", badStatus.status 
 const removePlan = await call(`/api/plans/${planId}`, {
   method: "DELETE",
   token,
-  base: SERVICES.planner,
 });
 check("DELETE /api/plans/:id -> 200", removePlan.status === 200);
 
 const removeTwice = await call(`/api/plans/${planId}`, {
   method: "DELETE",
   token,
-  base: SERVICES.planner,
 });
 check("DELETE /api/plans/:id twice -> 404", removeTwice.status === 404);
 
@@ -447,7 +422,6 @@ console.log("\nsvc-health");
 const logged = await call("/api/weight", {
   method: "POST",
   token,
-  base: SERVICES.health,
   body: { weight: 70.5, note: "audit" },
 });
 check(
@@ -456,7 +430,7 @@ check(
   `status=${logged.status}`,
 );
 
-const weightLogs = await call("/api/weight", { token, base: SERVICES.health });
+const weightLogs = await call("/api/weight", { token });
 check(
   "GET /api/weight -> 200 with logs",
   weightLogs.status === 200 && (weightLogs.json?.logs ?? []).length > 0,
@@ -465,26 +439,23 @@ check(
 const badWeight = await call("/api/weight", {
   method: "POST",
   token,
-  base: SERVICES.health,
   body: { weight: -3 },
 });
 check("POST /api/weight with a negative weight -> 400", badWeight.status === 400);
 
 const targets = await call("/api/user/weight-targets", {
   token,
-  base: SERVICES.health,
 });
 check("GET /api/user/weight-targets -> 200", targets.status === 200);
 
 const patchedTargets = await call("/api/user/weight-targets", {
   method: "PATCH",
   token,
-  base: SERVICES.health,
   body: { currentWeight: 70.5, targetWeight: 68 },
 });
 check("PATCH /api/user/weight-targets -> 200", patchedTargets.status === 200);
 
-const analytics = await call("/api/analytics", { token, base: SERVICES.health });
+const analytics = await call("/api/analytics", { token });
 check(
   "GET /api/analytics -> 200 with a summary",
   analytics.status === 200 && typeof analytics.json?.summary?.totalPlans === "number",
@@ -494,7 +465,6 @@ check(
 const chat = await call("/api/chat", {
   method: "POST",
   token,
-  base: SERVICES.health,
   body: { query: "what is the glycemic index?" },
 });
 check(
@@ -503,12 +473,11 @@ check(
 );
 check("the chat answer carries a disclaimer", Boolean(chat.json?.disclaimer));
 
-const chatHistory = await call("/api/chat", { token, base: SERVICES.health });
+const chatHistory = await call("/api/chat", { token });
 check("GET /api/chat -> 200", chatHistory.status === 200);
 
 const nutrients = await call("/api/nutrients?query=ugali", {
   token,
-  base: SERVICES.health,
 });
 check(
   "GET /api/nutrients -> 200 with numbers",
@@ -517,31 +486,36 @@ check(
 );
 
 // ---------------------------------------------------------------------------
-// 8. The gateway routes everything
+// 8. Every module answers on the same API
 // ---------------------------------------------------------------------------
-console.log("\nThe gateway routes every path to the right service");
+console.log("\nEvery module answers on the same API");
 const ROUTING = [
-  ["GET", "/api/auth/me", "auth"],
-  ["GET", "/api/user/profile", "auth"],
-  ["GET", "/api/user/budget", "auth"],
-  ["GET", "/api/user/portion-targets", "auth"],
-  ["GET", "/api/settings", "auth"],
-  ["GET", "/api/dishes", "catalog"],
-  ["GET", "/api/dishes/stats", "catalog"],
-  ["GET", "/api/plans", "planner"],
-  ["GET", "/api/weight", "health"],
-  ["GET", "/api/user/weight-targets", "health"],
-  ["GET", "/api/analytics", "health"],
-  ["GET", "/api/chat", "health"],
-  ["GET", "/api/nutrients?query=ugali", "health"],
+  ["GET", "/api/auth/me"],
+  ["GET", "/api/user/profile"],
+  ["GET", "/api/user/budget"],
+  ["GET", "/api/user/portion-targets"],
+  ["GET", "/api/settings"],
+  ["GET", "/api/dishes"],
+  ["GET", "/api/dishes/stats"],
+  ["GET", "/api/plans"],
+  ["GET", "/api/weight"],
+  ["GET", "/api/user/weight-targets"],
+  ["GET", "/api/analytics"],
+  ["GET", "/api/chat"],
+  ["GET", "/api/nutrients?query=ugali"],
 ];
 
-for (const [method, path, expected] of ROUTING) {
+for (const [method, path] of ROUTING) {
   const res = await call(path, { method, token });
   check(
-    `${method.padEnd(5)} ${path.padEnd(32)} -> ${expected}`,
-    res.status === 200 && res.headers.get("x-upstream") === expected,
-    `status=${res.status} upstream=${res.headers.get("x-upstream")}`,
+    `${method.padEnd(5)} ${path.padEnd(32)} -> 200`,
+    res.status === 200,
+    `status=${res.status}`,
+  );
+  check(
+    `${method.padEnd(5)} ${path.padEnd(32)} -> x-service`,
+    res.headers.get("x-service") === "glucoplate-api",
+    res.headers.get("x-service") ?? "",
   );
 }
 

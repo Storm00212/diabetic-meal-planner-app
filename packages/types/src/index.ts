@@ -416,38 +416,17 @@ export type ApiError = {
 };
 
 // ---------------------------------------------------------------------------
-// Service registry
+// The Backend API
 // ---------------------------------------------------------------------------
 
-export type ServiceName =
-  | "gateway"
-  | "auth"
-  | "catalog"
-  | "planner"
-  | "health";
+/**
+ * The name the Backend API reports in its logs and its `x-service` header.
+ */
+export const API_SERVICE_NAME = "glucoplate-api" as const;
 
 /**
- * The explicit local port for every service.
+ * The port the Backend API listens on locally.
  *
- * Keeping them in one place means the web app, the mobile app, the gateway
- * and the smoke test all agree on where a service lives.
+ * In production the host injects `PORT`; locally this is the default.
  */
-export const SERVICE_PORTS = {
-  gateway: 4000,
-  auth: 4001,
-  catalog: 4002,
-  planner: 4003,
-  health: 4004,
-} as const satisfies Record<ServiceName, number>;
-
-export const SERVICE_NAMES: ServiceName[] = [
-  "gateway",
-  "auth",
-  "catalog",
-  "planner",
-  "health",
-];
-
-export function serviceUrl(service: ServiceName, host = "127.0.0.1"): string {
-  return `http://${host}:${SERVICE_PORTS[service]}`;
-}
+export const API_PORT = 4000;

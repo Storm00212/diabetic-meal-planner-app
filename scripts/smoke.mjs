@@ -13,12 +13,7 @@
 
 const BASE = (process.argv[2] ?? "http://127.0.0.1:4000").replace(/\/$/, "");
 
-const SERVICES = {
-  auth: "http://127.0.0.1:4001",
-  catalog: "http://127.0.0.1:4002",
-  planner: "http://127.0.0.1:4003",
-  health: "http://127.0.0.1:4004",
-};
+
 
 let failures = 0;
 
@@ -48,37 +43,28 @@ async function call(path, { method = "GET", body, token, base = BASE } = {}) {
 
 console.log(`\nGlucoPlate cross-service smoke test against ${BASE}\n`);
 
-// --- 1. Every service is healthy -----------------------------------------
-console.log("Service health (direct, not through the gateway)");
-for (const [name, base] of Object.entries(SERVICES)) {
-  const health = await call("/api/health", { base });
-  check(
-    `svc-${name} is healthy on port ${new URL(base).port}`,
-    health.status === 200 && health.json?.ok === true,
-    JSON.stringify(health.json),
-  );
-}
+// --- 1. The backend is healthy ---------------------------------------------
+console.log("Backend health");
+const backendHealth = await call("/api/health");
+check(
+  "the backend is healthy",
+  backendHealth.status === 200 &&
+    backendHealth.json?.ok === true &&
+    backendHealth.json?.service === "glucoplate-api",
+  JSON.stringify(backendHealth.json),
+);
 
-// --- 2. The gateway sees them all -----------------------------------------
-console.log("\nGateway");
-const gatewayHealth = await call("/api/health");
+// --- 2. The API identifies itself -----------------------------------------
+console.log("\nThe API");
 check(
-  "GET /api/health aggregates every upstream",
-  gatewayHealth.status === 200 &&
-    gatewayHealth.json?.upstream?.auth === true &&
-    gatewayHealth.json?.upstream?.catalog === true &&
-    gatewayHealth.json?.upstream?.planner === true &&
-    gatewayHealth.json?.upstream?.health === true,
-  JSON.stringify(gatewayHealth.json?.upstream),
+  "the API sets x-service",
+  backendHealth.headers.get("x-service") === "glucoplate-api",
+  backendHealth.headers.get("x-service") ?? "",
 );
 check(
-  "the gateway sets x-service",
-  gatewayHealth.headers.get("x-service") === "gateway",
-);
-check(
-  "the gateway sets x-request-id",
-  Boolean(gatewayHealth.headers.get("x-request-id")),
-  gatewayHealth.headers.get("x-request-id") ?? "",
+  "the API sets x-request-id",
+  Boolean(backendHealth.headers.get("x-request-id")),
+  backendHealth.headers.get("x-request-id") ?? "",
 );
 
 const unknown = await call("/api/does-not-exist");
@@ -356,9 +342,9 @@ check(
   traced.headers.get("x-request-id") ?? "",
 );
 check(
-  "the response says which upstream answered",
-  traced.headers.get("x-upstream") === "auth",
-  traced.headers.get("x-upstream") ?? "",
+  "the response says which service answered",
+  traced.headers.get("x-service") === "glucoplate-api",
+  traced.headers.get("x-service") ?? "",
 );
 
 console.log(
