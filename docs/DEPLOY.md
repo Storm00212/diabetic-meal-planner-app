@@ -192,10 +192,26 @@ npm run smoke  -- https://glucoplate-api.onrender.com
 
 | Thing | Limit | What it means for you |
 |---|---|---|
-| Backend (Web Service) | 750 instance-hours/month, sleeps after 15 min idle | **The first request after a pause takes 30–60 s** — Render has to wake the instance *and* Neon has to wake its compute. **Open the app two minutes before you present.** |
-| Frontend (Static Site) | Free, never sleeps | No cold start for the UI itself. |
+| Backend (Web Service) | 750 instance-hours **per workspace**, sleeps after 15 min idle | **The first request after a pause takes 30–60 s** — Render has to wake the instance *and* Neon has to wake its compute. **Open the app two minutes before you present.** |
+| Frontend (Static Site) | Free, never sleeps, **consumes no instance hours** | No cold start for the UI itself. Only bandwidth and build minutes. |
 | Neon | One branch, a handful of connections | Four services share it; `connection_limit=1` each keeps it at four. |
 | The keep-alive loop | Uses ~744 of your 750 hours | Only worth it on the machine you will present from. |
+
+### ⚠️ One always-on web service, that is all
+
+Render gives the **workspace** 750 free instance-hours a month, and **every
+free web service in the workspace draws from that one pool** — production,
+staging and previews alike.
+
+- One always-on web service = 744 hours. Fine.
+- **Two** always-on web services = 1,488 hours. Over the limit, and Render
+  **suspends all of your free web services until the start of next month** —
+  including the one you meant to demo.
+
+The static site does not count against instance hours, so a backend plus a
+frontend is fine. It is the **second always-on web service** that is the
+trap. If you rehearse on staging, let it spin down, and **never point a
+keep-alive loop at it**.
 
 ### Keeping the backend awake
 
@@ -205,6 +221,60 @@ which queries the database, so it keeps **both** Render and Neon awake:
 ```bash
 while true; do curl -s -o /dev/null https://glucoplate-api.onrender.com/api/health; sleep 300; done
 ```
+
+---
+
+## Should the demo use a staging environment?
+
+**No — demo on Production, and rehearse on Staging.**
+
+| | Production | Staging |
+|---|---|---|
+| Give this URL to the judges | ✅ | ❌ |
+| Always-on costs 744 instance-hours | ✅ | ❌ let it spin down |
+| Data | The demo data | A separate Neon branch |
+| Worth having? | Yes | Yes, for rehearsal only |
+
+Three reasons:
+
+1. **Full preview environments need a paid plan.** Render's preview
+   environments (a disposable copy of the whole stack per pull request)
+   require a Pro workspace. On the free Hobby plan you get **staging
+   environments** (2 per project) and single-service PR previews, which is
+   what you would use.
+2. **Staging draws from the same 750 hours.** If staging is ever kept awake
+   alongside production, you go over the limit and Render suspends *both*.
+3. **One stable URL.** The judges get one link that will not change.
+
+### If you want a staging environment (you should, for rehearsal)
+
+1. **Give it its own Neon branch**, so rehearsal logins and test dishes do
+   not end up in the demo data:
+   - neon.com → your project → **Branches → Create branch**, name it
+     `staging`.
+   - Copy that branch's **direct** connection string.
+2. **Create the environment** in Render: open your service → the
+   **Environment** dropdown at the top → **New environment instance** →
+   name it `staging`.
+3. **Set its environment variables** — same list as production, but
+   `DATABASE_URL` and `DIRECT_DATABASE_URL` point at the **staging branch**,
+   and `CORS_ORIGINS` will be the staging frontend's URL.
+4. **Prepare that branch from your machine** (same flag for both, or the
+   schema and the data end up in different places):
+
+   ```bash
+   # .env.local: DATABASE_URL and DIRECT_DATABASE_URL = the staging branch
+   npm run env:sync -- --neon
+   npm run db:push -- --neon
+   npm run db:seed
+   ```
+
+5. **Rehearse on it**, then **delete the staging environment** before the
+   demo so there is no chance of it eating the instance-hours.
+
+> The mobile app is not deployed to Render at all — it is an Expo app run on
+> a phone. Point it at whichever API URL you are rehearsing against:
+> `EXPO_PUBLIC_API_URL=https://glucoplate-api.onrender.com npm run dev:mobile`
 
 ---
 
