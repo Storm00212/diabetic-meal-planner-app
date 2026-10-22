@@ -5,6 +5,7 @@ import { api } from "@/app/api";
 import { useAuth } from "@/app/AuthProvider";
 import { RecommendationsPanel } from "./RecommendationsPanel";
 import { usePopupTriggers } from "@/shared/components/PopupSystem";
+import { Icons } from "@/shared/components/Icons";
 
 type DishStats = { total: number; avgCost: number; avgGi: number };
 
@@ -67,25 +68,25 @@ export function OverviewPage() {
     {
       label: "Dishes in bucket",
       value: String(stats.total),
-      icon: "🧺",
+      icon: Icons.bucket,
       hint: "Available to plan meals",
     },
     {
       label: "Daily budget",
       value: money(user?.dailyBudget ?? 0),
-      icon: "💰",
+      icon: Icons.budget,
       hint: "Your spending target",
     },
     {
       label: "Carb target",
       value: `${user?.dailyCarbLimit ?? 0} g`,
-      icon: "🩸",
+      icon: Icons.carbs,
       hint: "Keeps sugars stable",
     },
     {
       label: "Plans generated",
       value: String(planCount),
-      icon: "📅",
+      icon: Icons.calendar,
       hint: "Saved meal plans",
     },
   ];
@@ -94,7 +95,7 @@ export function OverviewPage() {
     <div className="mx-auto max-w-6xl animate-fade-in space-y-8">
       <header>
         <h1 className="text-2xl font-bold text-slate-900">
-          Welcome back, {(user?.name ?? "").split(" ")[0]} 👋
+          Welcome back, {(user?.name ?? "").split(" ")[0]}
         </h1>
         <p className="mt-1 text-slate-500">
           Here&apos;s your meal-planning snapshot for staying affordable and
@@ -130,7 +131,7 @@ export function OverviewPage() {
               to="/dashboard/dishes"
               className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
             >
-              <div className="text-2xl">🧺</div>
+              <div className="text-2xl" aria-hidden="true">{Icons.bucket}</div>
               <p className="mt-2 font-semibold text-slate-800">
                 Manage your bucket
               </p>
@@ -142,7 +143,7 @@ export function OverviewPage() {
               to="/dashboard/planner"
               className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
             >
-              <div className="text-2xl">🍽️</div>
+              <div className="text-2xl" aria-hidden="true">{Icons.planner}</div>
               <p className="mt-2 font-semibold text-slate-800">
                 Generate a meal plan
               </p>
@@ -154,7 +155,7 @@ export function OverviewPage() {
 
           <div className="mt-6 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 p-5 text-white">
             <p className="text-sm/relaxed">
-              💡 <strong>Tip:</strong> Add plenty of low-GI dishes (index ≤ 55)
+              {Icons.tip} <strong>Tip:</strong> Add plenty of low-GI dishes (index ≤ 55)
               to your bucket. GlucoPlate always prioritises the safest, cheapest
               options so your blood sugar stays stable.
             </p>
@@ -207,7 +208,7 @@ export function OverviewPage() {
         </div>
         {recent.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-            <div className="text-3xl">📅</div>
+            <div className="text-3xl" aria-hidden="true">{Icons.calendar}</div>
             <p className="mt-2 font-medium text-slate-700">No plans yet</p>
             <p className="text-sm text-slate-500">
               Generate your first daily meal plan to see it here.

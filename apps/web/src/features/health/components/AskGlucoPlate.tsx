@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { api } from "@/app/api";
 import type { AskResponse } from "@glucoplate/types";
+import { Icons } from "@/shared/components/Icons";
 
 type Message = { role: "user" | "assistant"; text: string; fallback?: boolean };
 
@@ -56,7 +57,7 @@ export function AskGlucoPlate() {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🤖</span>
+        <span className="text-2xl" aria-hidden="true">{Icons.ai}</span>
         <h3 className="text-lg font-semibold text-slate-900">Ask GlucoPlate</h3>
       </div>
 

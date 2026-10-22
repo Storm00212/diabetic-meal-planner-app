@@ -3,15 +3,16 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useAuth } from "@/app/AuthProvider";
 import { ClinicianBanner } from "./ClinicianBanner";
+import { Icons, iconLabel } from "./Icons";
 
 const NAV = [
-  { href: "/dashboard", label: "Overview", icon: "🏠" },
-  { href: "/dashboard/dishes", label: "My Bucket", icon: "🧺" },
-  { href: "/dashboard/planner", label: "Meal Planner", icon: "🍽️" },
-  { href: "/dashboard/plans", label: "Saved Plans", icon: "📅" },
-  { href: "/dashboard/analytics", label: "Analytics", icon: "📊" },
-  { href: "/dashboard/health-hub", label: "Health Hub", icon: "🏥" },
-  { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
+  { href: "/dashboard", label: "Overview", icon: Icons.bucket_card },
+  { href: "/dashboard/dishes", label: "My Bucket", icon: Icons.bucket },
+  { href: "/dashboard/planner", label: "Meal Planner", icon: Icons.planner },
+  { href: "/dashboard/plans", label: "Saved Plans", icon: Icons.plans },
+  { href: "/dashboard/analytics", label: "Analytics", icon: Icons.analytics },
+  { href: "/dashboard/health-hub", label: "Health Hub", icon: Icons.health },
+  { href: "/dashboard/settings", label: "Settings", icon: Icons.settings },
 ];
 
 /**
@@ -49,7 +50,7 @@ export function DashboardLayout() {
           className="rounded-lg border border-slate-300 p-2 text-slate-600"
           aria-label="Toggle menu"
         >
-          {open ? "✕" : "☰"}
+          {open ? Icons.close : "☰"}
         </button>
       </div>
 
@@ -80,8 +81,9 @@ export function DashboardLayout() {
                       ? "bg-teal-50 text-teal-700"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
+                  aria-label={iconLabel(item.icon as keyof typeof Icons)}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-lg" aria-hidden="true">{item.icon}</span>
                   {item.label}
                 </Link>
               );

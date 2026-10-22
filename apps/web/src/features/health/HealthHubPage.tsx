@@ -6,6 +6,7 @@ import confetti from "canvas-confetti";
 import { MedicalDisclaimer } from "@/shared/components/MedicalDisclaimer";
 import { WeightTracker } from "./components/WeightTracker";
 import { AskGlucoPlate } from "./components/AskGlucoPlate";
+import { Icons } from "@/shared/components/Icons";
 
 export function HealthHubPage() {
   const [showCelebration, setShowCelebration] = useState(false);
@@ -59,7 +60,7 @@ export function HealthHubPage() {
             className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
           >
             <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-500 text-center space-y-4">
-              <span className="text-6xl">⭐</span>
+              <span className="text-6xl" aria-hidden="true">{Icons.star}</span>
               <h2 className="text-3xl font-bold text-slate-900">Congratulations!</h2>
               <p className="text-slate-600">You&apos;ve completed your meal plan for the day!</p>
             </div>
