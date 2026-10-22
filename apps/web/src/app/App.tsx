@@ -10,6 +10,7 @@ import { PlansPage } from "../features/plans/PlansPage";
 import { AnalyticsPage } from "../features/analytics/AnalyticsPage";
 import { HealthHubPage } from "../features/health/HealthHubPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
+import { PopupProvider } from "../shared/components/PopupSystem";
 
 /** Sends an unauthenticated visitor to the login screen. */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -46,35 +47,37 @@ function RedirectIfSignedIn({ children }: { children: ReactNode }) {
 export function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <RedirectIfSignedIn>
-              <AuthPage />
-            </RedirectIfSignedIn>
-          }
-        />
+      <PopupProvider>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <RedirectIfSignedIn>
+                <AuthPage />
+              </RedirectIfSignedIn>
+            }
+          />
 
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <DashboardLayout />
-            </RequireAuth>
-          }
-        >
-          <Route index element={<OverviewPage />} />
-          <Route path="dishes" element={<DishesPage />} />
-          <Route path="planner" element={<PlannerPage />} />
-          <Route path="plans" element={<PlansPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="health-hub" element={<HealthHubPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-        </Route>
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <DashboardLayout />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<OverviewPage />} />
+            <Route path="dishes" element={<DishesPage />} />
+            <Route path="planner" element={<PlannerPage />} />
+            <Route path="plans" element={<PlansPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="health-hub" element={<HealthHubPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </PopupProvider>
     </AuthProvider>
   );
 }

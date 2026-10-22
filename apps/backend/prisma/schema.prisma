@@ -80,7 +80,9 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now())
 
-  payments Payment[]
+  payments         Payment[]
+  achievements     Achievement[]
+  llmUsageLogs     LlmUsageLog[]
 }
 
 model Payment {
@@ -238,4 +240,40 @@ model WeightTarget {
   currentWeight Float?
   targetWeight  Float?
   updatedAt     DateTime @default(now())
+}
+
+// ── Achievements (game-style popups) ──────────────────────────────────
+
+model Achievement {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  key       String  // e.g. "first_plan", "first_weight", "streak_3_days", "budget_met"
+  title     String
+  earnedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+// ── LLM usage log (rate limiting, cost tracking, fallback audit) ──────
+
+model LlmUsageLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  model     String
+  prompt    String   @db.Text
+  response  String   @db.Text
+  tokensIn  Int?
+  tokensOut Int?
+  latencyMs Int?
+  fallback  Boolean  @default(false)
+  error     String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
 }

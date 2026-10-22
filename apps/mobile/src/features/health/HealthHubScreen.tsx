@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-na
 
 import { MedicalDisclaimer } from '@/shared/components/MedicalDisclaimer';
 import { WeightTracker } from './WeightTracker';
-import { AIChat } from './AIChat';
+import { AskGlucoPlate } from './AskGlucoPlate';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -27,7 +27,7 @@ export default function HealthHub() {
             onPress={triggerCelebration}
             className="p-2"
           >
-            <Text className="text-xs text-teal-600 font-medium">Test Celebration 🎉</Text>
+            <Text className="text-xs text-teal-600 font-medium">Test Celebration</Text>
           </TouchableOpacity>
         </View>
 
@@ -36,7 +36,7 @@ export default function HealthHub() {
             <WeightTracker />
           </View>
           <View className="w-[48%]">
-            <AIChat />
+            <AskGlucoPlate />
           </View>
         </View>
 
@@ -56,7 +56,7 @@ export default function HealthHub() {
             className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/40"
           >
             <View className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-500 items-center">
-              <Text className="text-6xl mb-4">🌟</Text>
+              <Text className="text-6xl mb-4">⭐</Text>
               <Text className="text-3xl font-bold text-slate-900 text-center">Congratulations!</Text>
               <Text className="text-slate-600 text-center">You&apos;ve completed your meal plan for the day!</Text>
               <ConfettiCannon count={200} origin={{x: -10, y: 0}} fadeOut={true} />

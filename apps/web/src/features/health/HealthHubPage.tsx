@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { MedicalDisclaimer } from "@/shared/components/MedicalDisclaimer";
 import { WeightTracker } from "./components/WeightTracker";
-import { AIChat } from "./components/AIChat";
+import { AskGlucoPlate } from "./components/AskGlucoPlate";
 
 export function HealthHubPage() {
   const [showCelebration, setShowCelebration] = useState(false);
@@ -32,13 +32,13 @@ export function HealthHubPage() {
           onClick={triggerCelebration}
           className="text-xs text-teal-600 hover:underline font-medium"
         >
-          Test Celebration 🎉
+          Test Celebration
         </button>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
         <WeightTracker />
-        <AIChat />
+        <AskGlucoPlate />
       </div>
 
       <div className="bg-teal-50 rounded-2xl p-6 border border-teal-100">
@@ -59,7 +59,7 @@ export function HealthHubPage() {
             className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
           >
             <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-teal-500 text-center space-y-4">
-              <span className="text-6xl">🌟</span>
+              <span className="text-6xl">⭐</span>
               <h2 className="text-3xl font-bold text-slate-900">Congratulations!</h2>
               <p className="text-slate-600">You&apos;ve completed your meal plan for the day!</p>
             </div>

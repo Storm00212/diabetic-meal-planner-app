@@ -401,6 +401,56 @@ export type ChatResponse = {
   notice: string;
 };
 
+// --- LLM Recommendations ---
+export type RecommendationResponse = {
+  recommendation: string;
+  fallback: boolean;
+  facts: string;
+  notice: string;
+};
+
+// --- LLM QA Assistant ---
+export type AskRequest = { question: string };
+export type AskResponse = {
+  answer: string;
+  disclaimer: string;
+  fallback: boolean;
+  notice: string;
+};
+
+// --- LLM Popups ---
+export type PopupType = "milestone" | "daily_challenge" | "tip" | "recommendation";
+export type PopupTrigger =
+  | { type: "milestone"; key: string }
+  | { type: "daily_challenge" }
+  | { type: "tip" }
+  | { type: "recommendation" };
+
+export type Popup = {
+  id: string;
+  type: PopupType;
+  title: string;
+  body: string;
+  fallback: boolean;
+  dismissible: true;
+  stoppable: true;
+  createdAt: string;
+};
+
+export type PopupResponse = {
+  popup: Popup | null;
+  reason?: string;
+};
+
+export type StoppedPopupsResponse = {
+  stopped: PopupType[];
+};
+
+export type UpdateStoppedPopupRequest = {
+  type: PopupType;
+  stopped: boolean;
+};
+
 export type HealthResponse = {
   ok: boolean;
   service: string;

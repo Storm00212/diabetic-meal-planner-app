@@ -20,6 +20,7 @@
     "build:mobile": "node scripts/build-units.mjs mobile",
     "start": "turbo run start --filter=@glucoplate/backend",
     "start:backend": "turbo run start --filter=@glucoplate/backend",
+    "start:all": "turbo run start --filter=@glucoplate/backend",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",

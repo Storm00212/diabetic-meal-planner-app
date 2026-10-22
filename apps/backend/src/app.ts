@@ -16,6 +16,7 @@ import { weightRouter } from "./modules/weight/weight.routes.js";
 import { analyticsRouter } from "./modules/analytics/analytics.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { nutrientsRouter } from "./modules/nutrients/nutrients.routes.js";
+import { llmRouter } from "./modules/llm/llm.routes.js";
 
 /**
  * Builds the Express application.
@@ -74,6 +75,7 @@ export function createApp() {
         "/api/analytics",
         "/api/chat",
         "/api/nutrients",
+        "/api/llm/*",
       ],
     });
   });
@@ -87,6 +89,7 @@ export function createApp() {
   app.use(analyticsRouter);
   app.use(chatRouter);
   app.use(nutrientsRouter);
+  app.use(llmRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

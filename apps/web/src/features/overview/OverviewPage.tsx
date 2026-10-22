@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { money, giBand } from "@glucoplate/domain";
 import { api } from "@/app/api";
 import { useAuth } from "@/app/AuthProvider";
+import { RecommendationsPanel } from "./RecommendationsPanel";
+import { usePopupTriggers } from "@/shared/components/PopupSystem";
 
 type DishStats = { total: number; avgCost: number; avgGi: number };
 
@@ -21,6 +23,7 @@ type RecentPlan = {
  */
 export function OverviewPage() {
   const { user } = useAuth();
+  const { triggerMilestone, triggerDailyChallenge } = usePopupTriggers();
   const [stats, setStats] = useState<DishStats>({
     total: 0,
     avgCost: 0,
@@ -45,6 +48,10 @@ export function OverviewPage() {
         const list = plans.value.plans ?? [];
         setPlanCount(list.length);
         setRecent(list.slice(0, 3));
+
+        // Check for milestones
+        if (list.length === 1) triggerMilestone("first_plan");
+        if (list.length >= 5) triggerMilestone("plan_streak_5");
       }
     }
 
@@ -52,7 +59,7 @@ export function OverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [triggerMilestone]);
 
   const band = giBand(Math.round(stats.avgGi));
 
@@ -111,6 +118,9 @@ export function OverviewPage() {
         ))}
       </div>
 
+      {/* AI Recommendation */}
+      <RecommendationsPanel />
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Quick actions */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
@@ -137,7 +147,7 @@ export function OverviewPage() {
                 Generate a meal plan
               </p>
               <p className="text-sm text-slate-500">
-                Get a morning, afternoon &amp; evening plan within budget.
+                Get a morning, afternoon & evening plan within budget.
               </p>
             </Link>
           </div>

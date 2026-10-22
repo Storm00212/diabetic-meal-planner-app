@@ -16,6 +16,8 @@
 import type {
   AnalyticsResponse,
   ApiError,
+  AskRequest,
+  AskResponse,
   AuthResponse,
   ChatRequest,
   ChatResponse,
@@ -30,13 +32,19 @@ import type {
   MealPlanWithItems,
   Payment,
   PortionTargets,
+  Popup,
+  PopupResponse,
+  PopupTrigger,
   PublicUser,
+  RecommendationResponse,
   RegisterRequest,
+  StoppedPopupsResponse,
   SwapCandidate,
   UpdateBudgetRequest,
   UpdatePlanItemRequest,
   UpdateProfileRequest,
   UpdateSettingsRequest,
+  UpdateStoppedPopupRequest,
   WeightLog,
   WeightRequest,
   WeightTargets,
@@ -315,6 +323,21 @@ export function createHealthApi(client: GlucoPlateClient) {
   };
 }
 
+export function createLLMApi(client: GlucoPlateClient) {
+  return {
+    recommendation: () =>
+      client.request<RecommendationResponse>("/api/llm/recommendation", { method: "POST" }),
+    ask: (body: AskRequest) =>
+      client.request<AskResponse>("/api/llm/ask", { method: "POST", body }),
+    popup: (trigger: PopupTrigger) =>
+      client.request<PopupResponse>("/api/llm/popup", { method: "POST", body: trigger }),
+    stoppedPopups: () =>
+      client.request<StoppedPopupsResponse>("/api/llm/popups/stopped"),
+    updateStoppedPopup: (body: UpdateStoppedPopupRequest) =>
+      client.request<{ ok: boolean }>("/api/llm/popups/stopped", { method: "PATCH", body }),
+  };
+}
+
 export function createUserApi(client: GlucoPlateClient) {
   return {
     profile: () => client.request<PublicUser & { notice?: string }>("/api/user/profile"),
@@ -373,6 +396,7 @@ export function createGlucoPlateApi(options: ClientOptions) {
     catalog: createCatalogApi(client),
     planner: createPlannerApi(client),
     health: createHealthApi(client),
+    llm: createLLMApi(client),
     user: createUserApi(client),
   };
 }

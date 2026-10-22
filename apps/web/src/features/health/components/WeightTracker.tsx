@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/app/api";
+import { usePopupTriggers } from "@/shared/components/PopupSystem";
 
 export function WeightTracker() {
+  const { triggerMilestone } = usePopupTriggers();
   const [weight, setWeight] = useState<number | null>(null);
   const [targetWeight, setTargetWeight] = useState<number | null>(null);
   const [input, setInput] = useState("");
+  const [hasLoggedBefore, setHasLoggedBefore] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -17,6 +20,7 @@ export function WeightTracker() {
         if (cancelled) return;
         setWeight(data.currentWeight);
         setTargetWeight(data.targetWeight);
+        setHasLoggedBefore(data.currentWeight !== null);
       } catch {
         /* leave the fields empty */
       }
@@ -30,12 +34,17 @@ export function WeightTracker() {
 
   async function handleLog() {
     if (!input) return;
+    const isFirstLog = !hasLoggedBefore;
     await api.health.logWeight({
       weight: parseFloat(input),
       date: new Date().toISOString().slice(0, 10),
     });
     setWeight(parseFloat(input));
+    setHasLoggedBefore(true);
     setInput("");
+    if (isFirstLog) {
+      triggerMilestone("first_weight");
+    }
   }
 
   return (
@@ -74,7 +83,7 @@ export function WeightTracker() {
 
       <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
         <p className="text-sm text-slate-600 italic">
-          &quot;Based on your current meal plan, you are in a slight caloric deficit. Estimated weight trend: <span className="text-emerald-600 font-semibold">&darr; 0.2kg / week</span>&quot;
+          "Based on your current meal plan, you are in a slight caloric deficit. Estimated weight trend: <span className="text-emerald-600 font-semibold">&darr; 0.2kg / week</span>"
         </p>
       </div>
     </div>

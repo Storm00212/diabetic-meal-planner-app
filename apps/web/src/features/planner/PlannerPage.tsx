@@ -6,6 +6,7 @@ import { api } from "@/app/api";
 import { useAuth } from "@/app/AuthProvider";
 import { explainDish, giBand, money } from "@glucoplate/domain";
 import type { Dish, MealSlot, PlanResult, SwapCandidate } from "@glucoplate/types";
+import { usePopupTriggers } from "@/shared/components/PopupSystem";
 
 type Slot = MealSlot;
 const SLOTS: { key: Slot; label: string; icon: string; time: string }[] = [
@@ -45,6 +46,7 @@ function swappedMessage(totals: PreviewTotals): string {
 
 export function PlannerPage() {
   const { user } = useAuth();
+  const { triggerMilestone, triggerDailyChallenge, triggerRecommendation } = usePopupTriggers();
   const navigate = useNavigate();
   const [budget, setBudget] = useState(user?.dailyBudget ?? 300);
   const [carbTarget, setCarbTarget] = useState(user?.dailyCarbLimit ?? 200);
@@ -68,6 +70,8 @@ export function PlannerPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [planCount, setPlanCount] = useState(0);
+  const [consecutiveDays, setConsecutiveDays] = useState(0);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -91,6 +95,8 @@ export function PlannerPage() {
       const data = await api.planner.generate({ budget, carbTarget });
       setPlan(data.plan);
       setGiLimit(data.giLimit);
+      triggerDailyChallenge();
+      triggerRecommendation();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not generate a plan.",
@@ -190,6 +196,28 @@ export function PlannerPage() {
         ...(Object.keys(swapped).length > 0 ? { overrides: swapped } : {}),
       });
       showToast("Plan saved!");
+
+      // Check for budget milestone
+      if (totals && totals.withinBudget) {
+        triggerMilestone("budget_met");
+      }
+
+      // Check for carb streak
+      setPlanCount((prev) => {
+        const newCount = prev + 1;
+        if (totals && totals.withinCarbs) {
+          setConsecutiveDays((d) => {
+            const newStreak = d + 1;
+            if (newStreak === 3) triggerMilestone("streak_3_days");
+            if (newStreak === 7) triggerMilestone("streak_7_days");
+            return newStreak;
+          });
+        } else {
+          setConsecutiveDays(0);
+        }
+        return newCount;
+      });
+
       setTimeout(() => navigate("/dashboard/plans"), 800);
     } catch {
       showToast("Could not save plan.");

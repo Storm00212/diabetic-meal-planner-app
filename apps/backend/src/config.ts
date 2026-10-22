@@ -28,6 +28,11 @@ export const config = {
   logLevel: logLevel(),
   /** How long an access token stays valid, in seconds. */
   tokenTtlSeconds: Number(env("JWT_TTL_SECONDS", String(60 * 60 * 24 * 7))),
+  /** Groq LLM configuration (backend only). */
+  groqApiKey: env("GROQ_API_KEY", ""),
+  llmModel: env("LLM_MODEL", "llama-3.1-8b-instant"),
+  /** Demo mode: shows one-click login buttons for personas. */
+  demoMode: env("DEMO_MODE", "false") === "true",
 } as const;
 
 export type ServiceConfig = typeof config;
