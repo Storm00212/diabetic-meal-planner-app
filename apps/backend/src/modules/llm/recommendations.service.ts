@@ -65,6 +65,49 @@ function computeBudgetStreak(plans: { totalCost: number; budget: number; planDat
   return streak;
 }
 
+function generateMedicalAdvisory(user: { diabetesLevel: string; setting: string; targetWeight: number | null }, weightTrend: WeightTrend, carbTrend: CarbTrend, weightLogs: { weight: number; date: string }[]): string {
+  const advisories: string[] = [];
+  
+  // Diabetes level specific advice
+  if (user.diabetesLevel === "critical" || user.diabetesLevel === "type2_high_risk") {
+    advisories.push("Monitor blood glucose closely. Report persistent highs/lows to your clinician immediately.");
+  } else if (user.diabetesLevel === "type2_controlled") {
+    advisories.push("Continue current monitoring routine. HbA1c check every 3-6 months recommended.");
+  } else if (user.diabetesLevel === "prediabetes") {
+    advisories.push("Lifestyle changes can prevent progression. Focus on weight management and regular activity.");
+  }
+  
+  // Weight trend advice
+  if (weightTrend === "gaining" && user.targetWeight && weightLogs.length > 0) {
+    const latest = weightLogs[weightLogs.length - 1].weight;
+    if (latest > (user.targetWeight || 0)) {
+      advisories.push("Weight trending up. Consider reducing portion sizes and increasing activity.");
+    }
+  } else if (weightTrend === "losing" && user.diabetesLevel !== "healthy") {
+    advisories.push("Unintentional weight loss may indicate poor control. Discuss with your care team.");
+  }
+  
+  // Carb trend advice
+  if (carbTrend === "over") {
+    advisories.push("Carbs frequently above target. Review meal choices and consider lower-GI swaps.");
+  } else if (carbTrend === "under") {
+    advisories.push("Carbs well controlled. Ensure adequate nutrition — don't restrict excessively.");
+  }
+  
+  // Setting specific advice
+  if (user.setting === "elderly") {
+    advisories.push("Older adults: prioritize protein at each meal, stay hydrated, prevent hypoglycemia.");
+  } else if (user.setting === "child") {
+    advisories.push("Children: ensure growth-appropriate nutrition. Coordinate with pediatric diabetes team.");
+  } else if (user.setting === "student") {
+    advisories.push("Students: plan meals around schedule. Keep emergency snacks accessible.");
+  } else if (user.setting === "rural_farmer") {
+    advisories.push("Rural settings: use local low-GI staples. Plan for clinic visit access.");
+  }
+  
+  return advisories.length > 0 ? advisories.join(" | ") : "Maintain current routine. Regular review with healthcare provider advised.";
+}
+
 export async function buildRecommendationFacts(userId: number): Promise<string> {
   const [user, weightLogs, plans] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
@@ -103,6 +146,10 @@ export async function buildRecommendationFacts(userId: number): Promise<string> 
     if (overCarbs) lines.push(`Note: Latest plan exceeds carb target by ${recentPlan.totalCarbs - user.dailyCarbTarget}g`);
   }
 
+  // Add medical advisory
+  const medicalAdvisory = generateMedicalAdvisory(user, weightTrend, carbTrend, weightLogs.map(l => ({ weight: l.weight, date: l.date.toISOString().slice(0, 10) })));
+  lines.push(`Medical advisory: ${medicalAdvisory}`);
+
   if (user.needsClinicianReview) {
     lines.push("SAFETY: User is in critical/high-risk category. Must include clinician notice.");
   }
@@ -119,6 +166,12 @@ export async function generatePersonalisedRecommendation(userId: number): Promis
   const facts = await buildRecommendationFacts(userId);
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User not found");
+
+  // Convert Prisma user to PublicUser format for medical advisory
+  const publicUser = {
+    ...user,
+    dailyCarbLimit: user.dailyCarbTarget,
+  };
 
   const result = await llmService.generateRecommendation(userId, facts);
 

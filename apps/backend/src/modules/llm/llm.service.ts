@@ -158,10 +158,11 @@ export const llmService = {
     }
 
     const systemPrompt = `You are GlucoPlate, a Kenyan diabetes meal planning assistant.
-Write ONE short, practical recommendation (max 2 sentences, no emojis, no markdown).
+Write ONE short, practical recommendation (max 3 sentences, no emojis, no markdown).
 Use the user's own numbers from the facts provided. Do not invent numbers.
 Currency is KES. Tone: encouraging, clear, concise.
-Never give medical advice beyond meal planning.`;
+The facts include a "Medical advisory:" line — incorporate this brief advisory into your response.
+Never give medical advice beyond meal planning and general diabetes awareness.`;
 
     const startedAt = Date.now();
     try {
