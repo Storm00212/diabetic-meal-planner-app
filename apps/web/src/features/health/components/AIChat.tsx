@@ -42,23 +42,23 @@ export function AIChat() {
   }
 
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm h-[450px]">
+    <div className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm h-[450px]">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Medical Assistant</h2>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Medical Assistant</h2>
         <Icons.ai className="text-2xl" aria-hidden="true" strokeWidth={2} />
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
               m.role === "user"
                 ? "bg-teal-600 text-white rounded-tr-none"
-                : "bg-slate-100 text-slate-700 rounded-tl-none"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-tl-none"
             }`}>
               {m.text}
               {m.role === "ai" && m.disclaimer && (
-                <p className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-400 italic">
+                <p className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[10px] text-slate-400 italic">
                   {m.disclaimer}
                 </p>
               )}
@@ -67,7 +67,7 @@ export function AIChat() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 rounded-2xl rounded-tl-none px-4 py-2 text-sm text-slate-400 animate-pulse">
+            <div className="bg-slate-100 dark:bg-slate-700 rounded-2xl rounded-tl-none px-4 py-2 text-sm text-slate-400 animate-pulse">
               Searching verified sources...
             </div>
           </div>
@@ -81,7 +81,7 @@ export function AIChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Ask about nutrients or foods..."
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
+          className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-teal-500"
         />
         <button
           onClick={handleSend}

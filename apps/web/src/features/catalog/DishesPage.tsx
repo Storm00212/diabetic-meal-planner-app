@@ -61,7 +61,6 @@ export function DishesPage() {
 
   async function handleSubmit(values: DishFormValues) {
     if (editing) {
-      // optimistic update
       const prev = dishes;
       const optimistic = { ...editing, ...values };
       setDishes((ds) => ds.map((d) => (d.id === editing.id ? optimistic : d)));
@@ -76,7 +75,6 @@ export function DishesPage() {
         showToast("Could not update dish.");
       }
     } else {
-      // optimistic add with temp id
       const tempId = -Date.now();
       const optimistic: Dish = {
         id: tempId,
@@ -120,8 +118,8 @@ export function DishesPage() {
     <div className="mx-auto max-w-6xl animate-fade-in space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Bucket</h1>
-          <p className="mt-1 text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">My Bucket</h1>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             Dishes you can afford to prepare. Add as many as you like — the
             planner picks the safest, cheapest options for each meal.
           </p>
@@ -146,7 +144,7 @@ export function DishesPage() {
               className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
                 filter === f.value
                   ? "bg-teal-600 text-white"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
               }`}
             >
               {f.label}
@@ -158,7 +156,7 @@ export function DishesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search dishes…"
-          className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 sm:w-64"
+          className="rounded-lg border border-slate-300 dark:border-slate-600 px-3.5 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 sm:w-64"
         />
       </div>
 
@@ -167,7 +165,7 @@ export function DishesPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-44 rounded-2xl border border-slate-200 bg-white p-5"
+              className="h-44 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5"
             >
               <div className="skeleton h-5 w-2/3 rounded" />
               <div className="skeleton mt-3 h-3 w-full rounded" />
@@ -177,14 +175,14 @@ export function DishesPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
           <Icons.bucket className="text-4xl" strokeWidth={2} />
-          <p className="mt-3 text-lg font-semibold text-slate-800">
+          <p className="mt-3 text-lg font-semibold text-slate-800 dark:text-slate-200">
             {dishes.length === 0
               ? "Your bucket is empty"
               : "No dishes match your filters"}
           </p>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             {dishes.length === 0
               ? "Add the dishes you can prepare within your budget to get started."
               : "Try a different filter or search term."}
@@ -208,31 +206,31 @@ export function DishesPage() {
             return (
               <div
                 key={dish.id}
-                className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-slate-900">{dish.name}</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{dish.name}</h3>
                     {dish.servingLabel && (
-                      <p className="mt-0.5 text-xs text-slate-400">
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
                         {dish.servingLabel}
                       </p>
                     )}
                   </div>
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                     dish.isPantryItem
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-teal-50 text-teal-700"
+                      ? "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                      : "bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300"
                   }`}>
                     {dish.isPantryItem ? "Pantry" : money(dish.cost)}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-slate-500">
+                <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-slate-500 dark:text-slate-400">
                   {dish.description || "No description"}
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
                     {MEAL_TIME_LABELS[dish.mealTime]}
                   </span>
                   <span
@@ -242,42 +240,40 @@ export function DishesPage() {
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2 text-center">
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 dark:bg-slate-800 p-2 text-center">
                   <div>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                       {dish.carbsG}g
                     </p>
                     <p className="text-[10px] uppercase text-slate-400">Carbs</p>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                       {dish.proteinG}g
                     </p>
-                    <p className="text-[10px] uppercase text-slate-400">
-                      Protein
-                    </p>
+                    <p className="text-[10px] uppercase text-slate-400">Protein</p>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                       {dish.calories}
                     </p>
                     <p className="text-[10px] uppercase text-slate-400">kcal</p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-4 flex gap-2 border-t border-slate-100 dark:border-slate-700 pt-3">
                   <button
                     onClick={() => {
                       setEditing(dish);
                       setModalOpen(true);
                     }}
-                    className="flex-1 rounded-lg border border-slate-300 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(dish)}
-                    className="flex-1 rounded-lg border border-rose-200 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                    className="flex-1 rounded-lg border border-rose-200 dark:border-rose-800 py-1.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
                   >
                     Delete
                   </button>

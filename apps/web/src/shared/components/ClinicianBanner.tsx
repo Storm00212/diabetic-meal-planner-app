@@ -23,7 +23,7 @@ export function ClinicianBanner({
   return (
     <div
       role="alert"
-      className={`mb-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 ${className}`}
+      className={`mb-4 flex items-start gap-3 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 px-4 py-3 text-sm text-rose-800 dark:text-rose-300 ${className}`}
       style={{
         backgroundColor: "#fff1f2",
         borderColor: "#fecdd3",

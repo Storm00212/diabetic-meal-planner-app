@@ -38,8 +38,8 @@ export const Logo = () => {
         <path d="M8 12L10 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         <path d="M24 12L22 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
-      <span className="text-xl font-bold tracking-tight text-slate-900">
-        Gluco<span className="text-teal-600">Plate</span>
+      <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+        Gluco<span className="text-teal-600 dark:text-teal-400">Plate</span>
       </span>
     </motion.div>
   );

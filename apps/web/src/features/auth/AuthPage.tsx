@@ -25,19 +25,19 @@ export function AuthPage() {
           </p>
           <ul className="space-y-3 text-emerald-50/90">
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 dark:bg-slate-800/30">
                 <Icons.budget size={20} strokeWidth={2} />
               </span>
               Plans that respect your budget
             </li>
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 dark:bg-slate-800/30">
                 <Icons.carbs size={20} strokeWidth={2} />
               </span>
               Low glycemic-index prioritisation
             </li>
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 dark:bg-slate-800/30">
                 <Icons.analytics size={20} strokeWidth={2} />
               </span>
               Track carbs, calories & cost
@@ -47,8 +47,8 @@ export function AuthPage() {
         <div className="relative z-10 text-sm text-emerald-50/70">
           A model app for diabetic meal planning.
         </div>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 dark:bg-slate-900/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-white/10 dark:bg-slate-900/20 blur-2xl" />
       </section>
 
       {/* Form side */}

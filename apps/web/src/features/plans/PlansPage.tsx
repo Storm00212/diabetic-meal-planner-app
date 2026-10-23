@@ -93,13 +93,13 @@ export function PlansPage() {
     <div className="mx-auto max-w-5xl animate-fade-in space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Saved Plans</h1>
-          <p className="mt-1 text-slate-500">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Saved Plans</h1>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             Your generated daily meal plans, kept for reference.
           </p>
         </div>
-            <Link
-              to="/dashboard/planner"
+        <Link
+          to="/dashboard/planner"
           className="shrink-0 rounded-lg bg-teal-600 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-700"
         >
           + New plan
@@ -111,7 +111,7 @@ export function PlansPage() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-40 rounded-2xl border border-slate-200 bg-white p-5"
+              className="h-40 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5"
             >
               <div className="skeleton h-5 w-1/3 rounded" />
               <div className="skeleton mt-4 h-20 w-full rounded" />
@@ -119,12 +119,12 @@ export function PlansPage() {
           ))}
         </div>
       ) : plans.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <Icons.calendar className="text-4xl" strokeWidth={2} />
-            <p className="mt-3 text-lg font-semibold text-slate-800">
-              No saved plans yet
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+          <Icons.calendar className="text-4xl" strokeWidth={2} />
+          <p className="mt-3 text-lg font-semibold text-slate-800 dark:text-slate-200">
+            No saved plans yet
           </p>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
             Generate a daily meal plan and save it to see it here.
           </p>
           <Link
@@ -141,14 +141,14 @@ export function PlansPage() {
             return (
               <div
                 key={plan.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
                       {formatDate(plan.planDate)}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {money(plan.totalCost)} of {money(plan.budget)} ·{" "}
                       {plan.totalCarbs}g carbs · {plan.totalCalories} kcal
                     </p>
@@ -157,15 +157,15 @@ export function PlansPage() {
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                         onBudget
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-rose-100 text-rose-700"
+                          ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                          : "bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"
                       }`}
                     >
                       {onBudget ? "On budget" : "Over budget"}
                     </span>
                     <button
                       onClick={() => handleDelete(plan)}
-                      className="rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                      className="rounded-lg border border-rose-200 dark:border-rose-800 px-3 py-1.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
                     >
                       Delete
                     </button>
@@ -173,13 +173,13 @@ export function PlansPage() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-500 ${onBudget ? "bg-emerald-500" : "bg-rose-500"}`}
                       style={{ width: `${Math.min(100, (plan.totalCost / plan.budget) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-slate-500 whitespace-nowrap">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {Math.round((plan.totalCost / plan.budget) * 100)}% of budget
                   </span>
                 </div>
@@ -193,19 +193,19 @@ export function PlansPage() {
                     return (
                       <div
                         key={slot}
-                        className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                        className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3"
                       >
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                           <SlotIcon size={14} strokeWidth={2} />{" "}
                           {meta.label}
                         </p>
                         {item ? (
                           <>
-                            <p className="mt-1 font-medium text-slate-800">
+                            <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">
                               {item.dishName}
                             </p>
                             {reason && (
-                              <p className="mt-1 text-xs text-slate-500">
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 {reason}
                               </p>
                             )}
@@ -215,7 +215,7 @@ export function PlansPage() {
                               >
                                 GI {item.glycemicIndex}
                               </span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
                                 {money(item.cost)} · {item.carbsG}g
                               </span>
                             </div>
@@ -226,9 +226,9 @@ export function PlansPage() {
                                 className={`flex-1 rounded-lg py-1 text-[10px] font-bold transition ${
                                   item.status === "eaten"
                                     ? "bg-emerald-500 text-white"
-                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                    : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                 }`}
-                                >
+                              >
                                 {item.status === "eaten" ? "Eaten" : "Mark Eaten"}
                               </button>
                               <button
@@ -237,7 +237,7 @@ export function PlansPage() {
                                 className={`flex-1 rounded-lg py-1 text-[10px] font-bold transition ${
                                   item.status === "skipped"
                                     ? "bg-slate-400 text-white"
-                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                    : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                 }`}
                               >
                                 {item.status === "skipped" ? "Skipped" : "Skip"}
@@ -245,7 +245,7 @@ export function PlansPage() {
                             </div>
                           </>
                         ) : (
-                          <p className="mt-1 text-sm text-slate-400">—</p>
+                          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">—</p>
                         )}
                       </div>
                     );

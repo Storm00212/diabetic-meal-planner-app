@@ -209,7 +209,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl animate-fade-in space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
         <p className="mt-1 text-slate-500">
           Update your profile, daily budget, and carb target. The planner uses
           these to build affordable, sugar-safe plans.
@@ -245,35 +245,35 @@ export function SettingsPage() {
 
       <form
         onSubmit={save}
-        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
             Full name
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
             Email
           </label>
           <input
             type="email"
             value={user?.email ?? ""}
             disabled
-            className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500"
+            className="w-full cursor-not-allowed rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-slate-500 dark:text-slate-400"
           />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Daily food budget (KSh)
             </label>
             <input
@@ -282,14 +282,14 @@ export function SettingsPage() {
               step="0.5"
               value={dailyBudget}
               onChange={(e) => setDailyBudget(Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               Total you can spend on a day&apos;s meals.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Daily carb target (g)
             </label>
             <input
@@ -298,15 +298,15 @@ export function SettingsPage() {
               step="10"
               value={dailyCarbTarget}
               onChange={(e) => setDailyCarbTarget(Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               Keeps sugars within your stable range.
             </p>
           </div>
         </div>
 
-        <div className="rounded-xl bg-teal-50 p-4 text-sm text-teal-800">
+        <div className="rounded-xl bg-teal-50 dark:bg-teal-900/20 p-4 text-sm text-teal-800 dark:text-teal-300">
           <Icons.stethoscope className="inline mr-1.5" size={14} strokeWidth={1.5} />
           Always coordinate your budget and carb targets with your doctor or
           dietitian. GlucoPlate is a planning aid, not medical advice.
@@ -412,13 +412,13 @@ export function SettingsPage() {
       {/* Your portion profile */}
       <form
         onSubmit={saveProfile}
-        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             Your portion profile
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             These details shape the portions on your plate, so the plan fits
             your body and your day.
           </p>
@@ -426,7 +426,7 @@ export function SettingsPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Age
             </label>
             <input
@@ -436,11 +436,11 @@ export function SettingsPage() {
               value={age}
               onChange={(e) => setAge(e.target.value)}
               placeholder="e.g. 34"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Height (cm)
             </label>
             <input
@@ -450,11 +450,11 @@ export function SettingsPage() {
               value={heightCm}
               onChange={(e) => setHeightCm(e.target.value)}
               placeholder="e.g. 168"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Current weight (kg)
             </label>
             <input
@@ -464,11 +464,11 @@ export function SettingsPage() {
               value={currentWeight}
               onChange={(e) => setCurrentWeight(e.target.value)}
               placeholder="e.g. 72"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Target weight (kg)
             </label>
             <input
@@ -478,17 +478,17 @@ export function SettingsPage() {
               value={targetWeight}
               onChange={(e) => setTargetWeight(e.target.value)}
               placeholder="e.g. 68"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Sex
             </label>
             <select
               value={sex}
               onChange={(e) => setSex(e.target.value as Sex)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             >
               {SEX_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -498,7 +498,7 @@ export function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Activity level
             </label>
             <select
@@ -506,7 +506,7 @@ export function SettingsPage() {
               onChange={(e) =>
                 setActivityLevel(e.target.value as ActivityLevel)
               }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             >
               {ACTIVITY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -518,7 +518,7 @@ export function SettingsPage() {
         </div>
 
         {profileError && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
             {profileError}
           </div>
         )}
@@ -534,13 +534,15 @@ export function SettingsPage() {
         </div>
 
         {/* The targets those details produce */}
-        <div className="border-t border-slate-100 pt-5">
-          <h3 className="text-sm font-semibold text-slate-900">
+        <div className="border-t border-slate-100 dark:border-slate-700 pt-5">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
             Your daily targets
           </h3>
 
           {targetsError && (
-            <p className="mt-2 text-xs text-rose-600">{targetsError}</p>
+            <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+              {targetsError}
+            </p>
           )}
 
           {targets && (
@@ -551,9 +553,11 @@ export function SettingsPage() {
                 <TargetStat label="Protein" value={targets.proteinG} unit="g" />
                 <TargetStat label="Fat" value={targets.fatG} unit="g" />
               </div>
-              <p className="mt-3 text-xs text-slate-500">{targets.basis}</p>
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                {targets.basis}
+              </p>
               {!targets.personalised && (
-                <p className="mt-2 text-xs text-amber-700">
+                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
                   These are general adult targets. Add your age, height, weight
                   and activity level to personalise the plan around you.
                 </p>
@@ -582,11 +586,11 @@ function TargetStat({
   unit: string;
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="text-lg font-bold text-slate-800">
+    <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
+      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
         {value}
-        <span className="ml-1 text-xs font-medium text-slate-400">{unit}</span>
+        <span className="ml-1 text-xs font-medium text-slate-400 dark:text-slate-500">{unit}</span>
       </p>
     </div>
   );

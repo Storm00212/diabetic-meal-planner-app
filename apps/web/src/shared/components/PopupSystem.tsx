@@ -101,7 +101,7 @@ function PopupModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 dark:bg-black/60 animate-fade-in"
       onClick={onDismiss}
       role="dialog"
       aria-modal="true"
@@ -109,21 +109,21 @@ function PopupModal({
       aria-describedby="popup-body"
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-slide-up"
+        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h3 id="popup-title" className="text-lg font-semibold text-slate-900">
+            <h3 id="popup-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
               {popup.title}
             </h3>
-            <p id="popup-body" className="mt-2 text-sm text-slate-600">
+            <p id="popup-body" className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               {popup.body}
             </p>
           </div>
           <button
             onClick={onDismiss}
-            className="shrink-0 rounded-lg p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            className="shrink-0 rounded-lg p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             aria-label="Dismiss"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -146,7 +146,7 @@ function PopupModal({
                 onStop(popup.type);
                 onDismiss();
               }}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
               Stop showing these
             </button>
@@ -154,7 +154,7 @@ function PopupModal({
         </div>
 
         {popup.fallback && (
-          <p className="mt-3 text-xs text-amber-600">
+          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
             This message was generated from a cached template.
           </p>
         )}

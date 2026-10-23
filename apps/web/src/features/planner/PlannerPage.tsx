@@ -230,18 +230,18 @@ export function PlannerPage() {
   return (
     <div className="mx-auto max-w-5xl animate-fade-in space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">Meal Planner</h1>
-        <p className="mt-1 text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Meal Planner</h1>
+        <p className="mt-1 text-slate-500 dark:text-slate-400">
           Set your budget and carb target, then let GlucoPlate allocate an
           affordable, blood-sugar-friendly plan for the day.
         </p>
       </header>
 
       {/* Controls */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Daily budget (KSh)
             </label>
             <input
@@ -250,11 +250,11 @@ export function PlannerPage() {
               step="0.5"
               value={budget}
               onChange={(e) => setBudget(Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Carb target (g)
             </label>
             <input
@@ -263,18 +263,18 @@ export function PlannerPage() {
               step="10"
               value={carbTarget}
               onChange={(e) => setCarbTarget(Number(e.target.value))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
               Plan date
             </label>
             <input
               type="date"
               value={planDate}
               onChange={(e) => setPlanDate(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
         </div>
@@ -294,11 +294,11 @@ export function PlannerPage() {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+        <div className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-6 text-center">
           <div className="text-3xl" aria-hidden="true">
             <Icons.bucket size={32} strokeWidth={2} />
           </div>
-          <p className="mt-2 font-semibold text-rose-800">{error}</p>
+          <p className="mt-2 font-semibold text-rose-700 dark:text-rose-300">{error}</p>
           <Link
             to="/dashboard/dishes"
             className="mt-4 inline-block rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
@@ -313,7 +313,7 @@ export function PlannerPage() {
           {SLOTS.map((s) => (
             <div
               key={s.key}
-              className="h-56 rounded-2xl border border-slate-200 bg-white p-5"
+              className="h-56 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5"
             >
               <div className="skeleton h-6 w-1/2 rounded" />
               <div className="skeleton mt-4 h-4 w-3/4 rounded" />
@@ -330,15 +330,15 @@ export function PlannerPage() {
           <div
             className={`rounded-2xl border p-5 ${
               totals.withinBudget && totals.withinCarbs && totals.withinGi
-                ? "border-emerald-200 bg-emerald-50"
-                : "border-amber-200 bg-amber-50"
+                ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20"
+                : "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20"
             }`}
           >
             <p
               className={`font-semibold ${
                 totals.withinBudget && totals.withinCarbs && totals.withinGi
-                  ? "text-emerald-800"
-                  : "text-amber-800"
+                  ? "text-emerald-800 dark:text-emerald-300"
+                  : "text-amber-800 dark:text-amber-300"
               }`}
             >
               {hasOverrides ? swappedMessage(totals) : plan.message}
@@ -406,20 +406,20 @@ export function PlannerPage() {
               return (
                 <div
                   key={s.key}
-                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
                 >
                   <div className="flex items-center gap-2">
                     <s.icon size={24} strokeWidth={2} className="text-2xl" aria-hidden="true" />
                     <div>
-                      <p className="font-semibold text-slate-900">{s.label}</p>
-                      <p className="text-xs text-slate-400">{s.time}</p>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{s.label}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{s.time}</p>
                     </div>
                   </div>
 
                   {dish ? (
                     <div className="mt-4 flex flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-slate-800">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">
                           {dish.name}
                         </p>
                         <button
@@ -428,12 +428,12 @@ export function PlannerPage() {
                           aria-expanded={swapSlot === s.key}
                           aria-controls={`swap-${s.key}`}
                           aria-label={`Swap ${dish.name} for a cheaper, lower-glycemic-index dish`}
-                          className="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                          className="shrink-0 rounded-full border border-slate-300 dark:border-slate-600 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:border-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-700 dark:hover:text-teal-400"
                         >
                           Swap
                         </button>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
                         {dish.description || "No description"}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -444,8 +444,8 @@ export function PlannerPage() {
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                           dish.isPantryItem
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-teal-50 text-teal-700"
+                            ? "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
+                            : "bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300"
                         }`}>
                           {dish.isPantryItem ? "Pantry" : money(dish.cost)}
                         </span>
@@ -454,7 +454,7 @@ export function PlannerPage() {
                       {/* Why this dish */}
                       {reasons.length > 0 && (
                         <ul
-                          className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500"
+                          className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500 dark:text-slate-400"
                           aria-label={`Why ${dish.name}`}
                         >
                           {reasons.map((reason, index) => (
@@ -467,15 +467,15 @@ export function PlannerPage() {
                       {swapSlot === s.key && (
                         <div
                           id={`swap-${s.key}`}
-                          className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
+                          className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3"
                         >
                           {swapLoading && (
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
                               Looking for alternatives…
                             </p>
                           )}
                           {!swapLoading && swapError && (
-                            <p className="text-xs text-rose-600">{swapError}</p>
+                            <p className="text-xs text-rose-600 dark:text-rose-400">{swapError}</p>
                           )}
                           {!swapLoading && !swapError && swapOptions.length > 0 && (
                             <ul className="space-y-2">
@@ -485,17 +485,17 @@ export function PlannerPage() {
                                     type="button"
                                     onClick={() => applySwap(s.key, alt)}
                                     aria-label={`Use ${alt.name} instead of ${dish.name}, ${money(alt.cost)}, glycemic index ${alt.glycemicIndex}`}
-                                    className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-left transition hover:border-teal-300 hover:bg-teal-50/40"
+                                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 p-2.5 text-left transition hover:border-teal-300 hover:bg-teal-50/40 dark:hover:border-teal-500"
                                   >
                                     <span className="flex items-baseline justify-between gap-2">
-                                      <span className="text-sm font-medium text-slate-800">
+                                      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                         {alt.name}
                                       </span>
-                                      <span className="shrink-0 text-xs font-semibold text-slate-600">
+                                      <span className="shrink-0 text-xs font-semibold text-slate-600 dark:text-slate-300">
                                         {money(alt.cost)}
                                       </span>
                                     </span>
-                                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                       <span
                                         className={`rounded-full px-1.5 py-0.5 font-semibold ${giBand(alt.glycemicIndex).badge}`}
                                       >
@@ -519,13 +519,15 @@ export function PlannerPage() {
                     </div>
                   ) : (
                     <div className="mt-6 flex flex-1 flex-col items-center justify-center text-center">
-                      <div className="text-2xl">🍂</div>
-                      <p className="mt-2 text-sm text-slate-500">
+                      <div className="text-2xl">
+                        <Icons.bucket size={32} strokeWidth={2} />
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                         No suitable dish for this slot.
                       </p>
                       <Link
                         to="/dashboard/dishes"
-                        className="mt-2 text-xs font-semibold text-teal-600 hover:text-teal-700"
+                        className="mt-2 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
                       >
                         Add one →
                       </Link>
@@ -537,7 +539,7 @@ export function PlannerPage() {
           </div>
 
           {hasOverrides && (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               Your swaps are saved with the plan, so the meals you follow are
               the ones you chose.
             </p>
@@ -548,7 +550,7 @@ export function PlannerPage() {
               <button
                 type="button"
                 onClick={resetSwaps}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
               >
                 <span className="flex items-center gap-2">
                   <Icons.regenerate size={16} strokeWidth={2} /> Reset swaps
@@ -557,7 +559,7 @@ export function PlannerPage() {
             )}
             <button
               onClick={generate}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2.5 font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50"
             >
               <span className="flex items-center gap-2">
                 <Icons.regenerate size={16} strokeWidth={2} /> Regenerate
@@ -568,7 +570,9 @@ export function PlannerPage() {
               disabled={saving}
               className="rounded-lg bg-teal-600 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
             >
-              {saving ? "Saving…" : `${Icons.save} Save this plan`}
+              <span className="flex items-center gap-2">
+                <Icons.save size={16} strokeWidth={2} /> Save this plan
+              </span>
             </button>
           </div>
         </div>
@@ -595,29 +599,29 @@ function SummaryStat({
   ok?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-white/70 p-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+    <div className="rounded-xl bg-white dark:bg-slate-800 p-3">
+      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
       <p
         className={`text-lg font-bold ${
           ok === undefined
-            ? "text-slate-800"
+            ? "text-slate-800 dark:text-slate-200"
             : ok
-              ? "text-emerald-700"
-              : "text-rose-600"
+              ? "text-emerald-700 dark:text-emerald-300"
+              : "text-rose-600 dark:text-rose-400"
         }`}
       >
         {value}
       </p>
-      <p className="text-xs text-slate-400">{sub}</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500">{sub}</p>
     </div>
   );
 }
 
 function MiniStat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 py-1.5">
-      <p className="text-sm font-bold text-slate-800">{value}</p>
-      <p className="text-[10px] uppercase text-slate-400">{label}</p>
+    <div className="rounded-lg bg-slate-50 dark:bg-slate-800 py-1.5">
+      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{value}</p>
+      <p className="text-[10px] uppercase text-slate-400 dark:text-slate-500">{label}</p>
     </div>
   );
 }

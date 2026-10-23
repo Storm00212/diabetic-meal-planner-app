@@ -18,11 +18,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+    if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-teal-200 dark:border-teal-800 border-t-teal-600" />
           <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Loading GlucoPlate…</p>
         </div>
       </div>

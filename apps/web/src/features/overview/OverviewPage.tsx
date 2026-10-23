@@ -94,10 +94,10 @@ export function OverviewPage() {
   return (
     <div className="mx-auto max-w-6xl animate-fade-in space-y-8">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
           Welcome back, {(user?.name ?? "").split(" ")[0]}
         </h1>
-        <p className="mt-1 text-slate-500">
+        <p className="mt-1 text-slate-500 dark:text-slate-400">
           Here&apos;s your meal-planning snapshot for staying affordable and
           sugar-safe.
         </p>
@@ -107,14 +107,14 @@ export function OverviewPage() {
         {cards.map((c) => (
           <div
             key={c.label}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm"
           >
             <div className="flex items-center justify-between">
               <c.icon size={24} strokeWidth={2} className="text-2xl" />
             </div>
-            <p className="mt-3 text-2xl font-bold text-slate-900">{c.value}</p>
-            <p className="text-sm font-medium text-slate-600">{c.label}</p>
-            <p className="mt-1 text-xs text-slate-400">{c.hint}</p>
+            <p className="mt-3 text-2xl font-bold text-slate-900 dark:text-slate-100">{c.value}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{c.label}</p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{c.hint}</p>
           </div>
         ))}
       </div>
@@ -124,34 +124,34 @@ export function OverviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Quick actions */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">Quick actions</h2>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm lg:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Quick actions</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Link
               to="/dashboard/dishes"
-              className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
+              className="group rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition hover:border-teal-300 dark:hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-900/20"
             >
               <div className="text-2xl" aria-hidden="true">
                 <Icons.bucket size={24} strokeWidth={2} />
               </div>
-              <p className="mt-2 font-semibold text-slate-800">
+              <p className="mt-2 font-semibold text-slate-800 dark:text-slate-200">
                 Manage your bucket
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Add or edit dishes you can afford to prepare.
               </p>
             </Link>
             <Link
               to="/dashboard/planner"
-              className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
+              className="group rounded-xl border border-slate-200 dark:border-slate-700 p-4 transition hover:border-teal-300 dark:hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-900/20"
             >
               <div className="text-2xl" aria-hidden="true">
                 <Icons.planner size={24} strokeWidth={2} />
               </div>
-              <p className="mt-2 font-semibold text-slate-800">
+              <p className="mt-2 font-semibold text-slate-800 dark:text-slate-200">
                 Generate a meal plan
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Get a morning, afternoon & evening plan within budget.
               </p>
             </Link>
@@ -168,24 +168,24 @@ export function OverviewPage() {
         </div>
 
         {/* Bucket health */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Bucket health</h2>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bucket health</h2>
           {stats.total === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
               No dishes yet. Add some to see insights here.
             </p>
           ) : (
             <div className="mt-4 space-y-4">
               <div>
-                <p className="text-sm text-slate-500">Average dish cost</p>
-                <p className="text-xl font-bold text-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Average dish cost</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                   {money(stats.avgCost)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-slate-500">Average glycemic index</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Average glycemic index</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <p className="text-xl font-bold text-slate-900">
+                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
                     {Math.round(stats.avgGi)}
                   </p>
                   <span
@@ -201,23 +201,23 @@ export function OverviewPage() {
       </div>
 
       {/* Recent plans */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Recent plans</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent plans</h2>
           <Link
             to="/dashboard/plans"
-            className="text-sm font-medium text-teal-600 hover:text-teal-700"
+            className="text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
           >
             View all →
           </Link>
         </div>
         {recent.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center">
+          <div className="mt-6 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center">
             <div className="text-3xl" aria-hidden="true">
               <Icons.calendar size={32} strokeWidth={2} />
             </div>
-            <p className="mt-2 font-medium text-slate-700">No plans yet</p>
-            <p className="text-sm text-slate-500">
+            <p className="mt-2 font-medium text-slate-700 dark:text-slate-300">No plans yet</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Generate your first daily meal plan to see it here.
             </p>
             <Link
@@ -228,17 +228,17 @@ export function OverviewPage() {
             </Link>
           </div>
         ) : (
-          <div className="mt-4 divide-y divide-slate-100">
+          <div className="mt-4 divide-y divide-slate-200 dark:divide-slate-700">
             {recent.map((p) => (
               <div
                 key={p.id}
                 className="flex items-center justify-between py-3"
               >
                 <div>
-                  <p className="font-medium text-slate-800">
+                  <p className="font-medium text-slate-800 dark:text-slate-200">
                     Plan for {p.planDate}
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     {money(p.totalCost)} · {p.totalCarbs}g carbs ·{" "}
                     {p.totalCalories} kcal
                   </p>
@@ -246,8 +246,8 @@ export function OverviewPage() {
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                     p.totalCost <= p.budget
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-rose-100 text-rose-700"
+                      ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                      : "bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300"
                   }`}
                 >
                   {p.totalCost <= p.budget ? "On budget" : "Over budget"}
