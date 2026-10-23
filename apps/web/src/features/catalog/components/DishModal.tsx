@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/app/api";
 import { Sparkles } from "lucide-react";
+import { Icons } from "@/shared/components/Icons";
 import type { Dish, DishFormValues } from "@glucoplate/types";
 
 const MEAL_OPTIONS = [
@@ -153,7 +154,7 @@ export default function DishModal({
             aria-label="Close"
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
           >
-            ✕
+            <Icons.close size={18} strokeWidth={2} />
           </button>
         </div>
 

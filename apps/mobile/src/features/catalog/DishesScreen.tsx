@@ -12,6 +12,7 @@ import {
 import { money, MEAL_TIME_LABELS } from '@glucoplate/domain';
 import { giBand } from '@glucoplate/domain';
 import { apiFetch, apiJson } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 import DishModal from './DishModal';
 import type { Dish, DishFormValues } from '@glucoplate/types';
 
@@ -201,7 +202,7 @@ export default function DishesScreen() {
           </View>
         ) : filtered.length === 0 ? (
           <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 items-center text-center">
-            <Text className="text-4xl mb-3">🧺</Text>
+            <Icons.bucket size={36} strokeWidth={2} />
             <Text className="text-lg font-semibold text-slate-800">
               {dishes.length === 0
                 ? "Your bucket is empty"

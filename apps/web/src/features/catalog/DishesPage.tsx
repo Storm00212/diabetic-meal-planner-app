@@ -5,6 +5,7 @@ import type { Dish, DishFormValues } from "@glucoplate/types";
 import { money, MEAL_TIME_LABELS, giBand } from "@glucoplate/domain";
 import { api } from "@/app/api";
 import DishModal from "./components/DishModal";
+import { Icons } from "@/shared/components/Icons";
 
 const FILTERS = [
   { value: "all", label: "All" },
@@ -177,7 +178,7 @@ export function DishesPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <div className="text-4xl">🧺</div>
+          <Icons.bucket className="text-4xl" strokeWidth={2} />
           <p className="mt-3 text-lg font-semibold text-slate-800">
             {dishes.length === 0
               ? "Your bucket is empty"

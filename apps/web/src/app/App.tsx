@@ -11,6 +11,7 @@ import { AnalyticsPage } from "../features/analytics/AnalyticsPage";
 import { HealthHubPage } from "../features/health/HealthHubPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { PopupProvider } from "../shared/components/PopupSystem";
+import { ThemeProvider } from "../shared/components/ThemeProvider";
 
 /** Sends an unauthenticated visitor to the login screen. */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -19,10 +20,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-teal-200 border-t-teal-600" />
-          <p className="mt-4 text-sm text-slate-500">Loading GlucoPlate…</p>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Loading GlucoPlate…</p>
         </div>
       </div>
     );
@@ -46,38 +47,40 @@ function RedirectIfSignedIn({ children }: { children: ReactNode }) {
 
 export function App() {
   return (
-    <AuthProvider>
-      <PopupProvider>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <RedirectIfSignedIn>
-                <AuthPage />
-              </RedirectIfSignedIn>
-            }
-          />
+    <ThemeProvider>
+      <AuthProvider>
+        <PopupProvider>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <RedirectIfSignedIn>
+                  <AuthPage />
+                </RedirectIfSignedIn>
+              }
+            />
 
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <DashboardLayout />
-              </RequireAuth>
-            }
-          >
-            <Route index element={<OverviewPage />} />
-            <Route path="dishes" element={<DishesPage />} />
-            <Route path="planner" element={<PlannerPage />} />
-            <Route path="plans" element={<PlansPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="health-hub" element={<HealthHubPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <DashboardLayout />
+                </RequireAuth>
+              }
+            >
+              <Route index element={<OverviewPage />} />
+              <Route path="dishes" element={<DishesPage />} />
+              <Route path="planner" element={<PlannerPage />} />
+              <Route path="plans" element={<PlansPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="health-hub" element={<HealthHubPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </PopupProvider>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </PopupProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

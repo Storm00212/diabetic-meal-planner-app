@@ -10,7 +10,7 @@ import { usePopupTriggers } from "@/shared/components/PopupSystem";
 import { Icons } from "@/shared/components/Icons";
 
 type Slot = MealSlot;
-const SLOTS: { key: Slot; label: string; icon: string; time: string }[] = [
+const SLOTS: { key: Slot; label: string; icon: typeof Icons.morning; time: string }[] = [
   { key: "morning", label: "Morning", icon: Icons.morning, time: "Breakfast" },
   { key: "afternoon", label: "Afternoon", icon: Icons.afternoon, time: "Lunch" },
   { key: "evening", label: "Evening", icon: Icons.evening, time: "Dinner" },
@@ -283,13 +283,21 @@ export function PlannerPage() {
           disabled={loading}
           className="mt-5 w-full rounded-lg bg-teal-600 px-4 py-2.5 font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60 sm:w-auto"
         >
-          {loading ? "Allocating meals…" : `${Icons.generate} Generate meal plan`}
+          {loading ? (
+            "Allocating meals…"
+          ) : (
+            <span className="flex items-center gap-2">
+              <Icons.generate size={18} strokeWidth={2} /> Generate meal plan
+            </span>
+          )}
         </button>
       </div>
 
       {error && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
-          <div className="text-3xl" aria-hidden="true">{Icons.bucket}</div>
+          <div className="text-3xl" aria-hidden="true">
+            <Icons.bucket size={32} strokeWidth={2} />
+          </div>
           <p className="mt-2 font-semibold text-rose-800">{error}</p>
           <Link
             to="/dashboard/dishes"
@@ -401,7 +409,7 @@ export function PlannerPage() {
                   className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl" aria-hidden="true">{s.icon}</span>
+                    <s.icon size={24} strokeWidth={2} className="text-2xl" aria-hidden="true" />
                     <div>
                       <p className="font-semibold text-slate-900">{s.label}</p>
                       <p className="text-xs text-slate-400">{s.time}</p>
@@ -542,14 +550,18 @@ export function PlannerPage() {
                 onClick={resetSwaps}
                 className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
               >
-                {Icons.regenerate} Reset swaps
+                <span className="flex items-center gap-2">
+                  <Icons.regenerate size={16} strokeWidth={2} /> Reset swaps
+                </span>
               </button>
             )}
             <button
               onClick={generate}
               className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-600 hover:bg-slate-50"
             >
-              {Icons.regenerate} Regenerate
+              <span className="flex items-center gap-2">
+                <Icons.regenerate size={16} strokeWidth={2} /> Regenerate
+              </span>
             </button>
             <button
               onClick={save}

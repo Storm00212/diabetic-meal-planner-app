@@ -5,15 +5,18 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { apiFetch, apiJson } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 
 export function WeightTracker() {
   const [weight, setWeight] = useState("");
   const [target, setTarget] = useState<number | null>(null);
   const [current, setCurrent] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadWeight() {
@@ -57,7 +60,7 @@ export function WeightTracker() {
     <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-lg font-bold text-slate-900">Weight Tracking</Text>
-        <Text className="text-2xl">⚖️</Text>
+        <Icons.weight size={24} strokeWidth={2} />
       </View>
 
       <View className="flex-row justify-between items-center bg-slate-50 rounded-xl p-4 mb-6">
@@ -99,6 +102,13 @@ export function WeightTracker() {
           )}
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        onPress={() => router.push("/dashboard/settings")}
+        className="mt-4 rounded-lg px-4 py-2 font-semibold text-teal-600"
+      >
+        <Text className="text-sm font-bold">Set target weight in Settings</Text>
+      </TouchableOpacity>
     </View>
   );
 }

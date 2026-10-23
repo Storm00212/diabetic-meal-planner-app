@@ -1,8 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, SafeAreaView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
 
 import { ACTIVITY_LABELS } from '@glucoplate/domain';
 import { api } from '@/lib/api-client';
+import { useTheme } from '@/shared/components/ThemeContext';
+import { Icons } from '@/shared/components/Icons';
 import type {
   ActivityLevel,
   Sex,
@@ -57,6 +66,7 @@ export default function SettingsScreen() {
   const [dailyCarbTarget, setDailyCarbTarget] = useState(0);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   // The health profile: what the planner has to avoid.
   const [diabetesType, setDiabetesType] = useState("");
@@ -70,6 +80,7 @@ export default function SettingsScreen() {
   const [heightCm, setHeightCm] = useState("");
   const [currentWeight, setCurrentWeight] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
+  const [targetWeightError, setTargetWeightError] = useState<string | null>(null);
   const [sex, setSex] = useState<Sex>("unspecified");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>("light");
   const [profileSaving, setProfileSaving] = useState(false);
@@ -179,15 +190,71 @@ export default function SettingsScreen() {
     }
   }
 
+  async function saveTargetWeight() {
+    setProfileSaving(true);
+    setTargetWeightError(null);
+
+    const parsed = Number(targetWeight);
+    if (
+      !targetWeight.trim() ||
+      !Number.isFinite(parsed) ||
+      parsed < 30 ||
+      parsed > 250
+    ) {
+      setTargetWeightError("Enter a valid weight between 30 and 250 kg.");
+      setProfileSaving(false);
+      return;
+    }
+
+    try {
+      await api.user.updateSettings(
+        { targetWeight: parsed } as unknown as UpdateSettingsRequest,
+      );
+      showToast("Target weight saved.");
+    } catch (err) {
+      setTargetWeightError(
+        err instanceof Error
+          ? err.message
+          : "Could not save your target weight.",
+      );
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
         <View className="flex-col gap-6">
           <View>
             <Text className="text-2xl font-bold text-slate-900">Settings</Text>
             <Text className="text-sm text-slate-500 mt-1">
               Update your profile, daily budget, and carb target.
             </Text>
+          </View>
+
+          {/* Appearance / theme toggle */}
+          <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <View className="flex-row items-center justify-between mb-2">
+              <View>
+                <Text className="text-lg font-semibold text-slate-900">
+                  Appearance
+                </Text>
+                <Text className="text-sm text-slate-500">
+                  Choose a theme that is comfortable for your eyes.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={toggleTheme}
+                className="rounded-lg border border-slate-300 p-3 flex items-center justify-center"
+              >
+                {theme === "light" ? (
+                  <Icons.themeDark size={22} strokeWidth={2} />
+                ) : (
+                  <Icons.themeLight size={22} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -201,7 +268,7 @@ export default function SettingsScreen() {
                 />
               </View>
 
-              <View className="flex-row gap-4">
+              <View className="flex-row flex-wrap gap-4">
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-slate-700 mb-1">Daily budget (KSh)</Text>
                   <TextInput
@@ -224,7 +291,8 @@ export default function SettingsScreen() {
 
               <View className="rounded-xl bg-teal-50 p-4">
                 <Text className="text-xs text-teal-800 leading-relaxed">
-                  🩺 Always coordinate your budget and carb targets with your doctor or
+                  <Icons.stethoscope size={12} strokeWidth={1.5} style={{ marginRight: 4 }} />{" "}
+                  Always coordinate your budget and carb targets with your doctor or
                   dietitian. GlucoPlate is a planning aid, not medical advice.
                 </Text>
               </View>
@@ -232,10 +300,92 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 onPress={save}
                 disabled={saving}
-                className={`rounded-lg py-3 items-center font-semibold ${saving ? 'bg-slate-400' : 'bg-teal-600'}`}
+                className={`rounded-lg py-4 items-center font-semibold ${saving ? 'bg-slate-400' : 'bg-teal-600'}`}
               >
                 <Text className="text-white font-bold">
                   {saving ? "Saving…" : "Save changes"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Target weight */}
+          <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <View className="flex-col gap-4">
+              <View>
+                <Text className="text-lg font-semibold text-slate-900">
+                  Target weight
+                </Text>
+                <Text className="text-sm text-slate-500">
+                  Set your goal weight. Your clinician can help you choose a
+                  healthy, realistic target.
+                </Text>
+              </View>
+
+              <View className="flex-row flex-wrap gap-4">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-slate-700 mb-1">
+                    Current weight (kg)
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={currentWeight}
+                    onChangeText={setCurrentWeight}
+                    placeholder="e.g. 72"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-slate-700 mb-1">
+                    Target weight (kg)
+                  </Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    value={targetWeight}
+                    onChangeText={setTargetWeight}
+                    placeholder="e.g. 68"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
+                  />
+                  {targetWeightError && (
+                    <Text className="mt-1 text-xs text-rose-600">
+                      {targetWeightError}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {currentWeight && targetWeight && (
+                <View className="mt-4 rounded-lg bg-slate-50 p-3">
+                  <View className="flex justify-between text-sm mb-2">
+                    <Text className="text-slate-500">Difference</Text>
+                    <Text className="font-semibold text-slate-900">
+                      {`${(Number(targetWeight) - Number(currentWeight)).toFixed(1)} kg`}
+                    </Text>
+                  </View>
+                  <View className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <View
+                      className="h-full bg-teal-600"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            (Number(currentWeight) / Number(targetWeight)) * 100,
+                          ),
+                        )}%`,
+                      }}
+                    />
+                  </View>
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={saveTargetWeight}
+                disabled={profileSaving}
+                className={`rounded-lg py-4 items-center font-semibold ${profileSaving ? 'bg-slate-400' : 'bg-teal-600'}`}
+              >
+                <Text className="text-white font-bold">
+                  {profileSaving ? "Saving…" : "Save target weight"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -281,7 +431,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 onPress={saveHealthProfile}
                 disabled={healthSaving}
-                className={`rounded-lg py-3 items-center font-semibold ${healthSaving ? 'bg-slate-400' : 'bg-teal-600'}`}
+                className={`rounded-lg py-4 items-center font-semibold ${healthSaving ? 'bg-slate-400' : 'bg-teal-600'}`}
               >
                 <Text className="text-white font-bold">
                   {healthSaving ? "Saving…" : "Save health profile"}
@@ -298,7 +448,7 @@ export default function SettingsScreen() {
             </Text>
 
             <View className="flex-col gap-4">
-              <View className="flex-row gap-4">
+              <View className="flex-row flex-wrap gap-4">
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-slate-700 mb-1">Age</Text>
                   <TextInput
@@ -321,7 +471,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
 
-              <View className="flex-row gap-4">
+              <View className="flex-row flex-wrap gap-4">
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-slate-700 mb-1">Current weight (kg)</Text>
                   <TextInput
@@ -424,7 +574,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 onPress={saveProfile}
                 disabled={profileSaving}
-                className={`rounded-lg py-3 items-center font-semibold ${profileSaving ? 'bg-slate-400' : 'bg-teal-600'}`}
+                className={`rounded-lg py-4 items-center font-semibold ${profileSaving ? 'bg-slate-400' : 'bg-teal-600'}`}
               >
                 <Text className="text-white font-bold">
                   {profileSaving ? "Saving…" : "Save portion profile"}

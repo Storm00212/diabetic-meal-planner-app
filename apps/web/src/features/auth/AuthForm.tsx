@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/AuthProvider";
+import { Icons } from "@/shared/components/Icons";
 
 export function AuthForm() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export function AuthForm() {
   return (
     <div className="w-full max-w-md animate-fade-in">
       <div className="mb-8 lg:hidden flex items-center gap-2 text-2xl font-bold text-teal-700">
-        <span>🍽️</span> GlucoPlate
+        <Icons.bucket_card size={24} strokeWidth={2} /> GlucoPlate
       </div>
 
       <h2 className="text-2xl font-bold text-slate-900">
@@ -134,7 +135,7 @@ export function AuthForm() {
         disabled={loading}
         className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
       >
-        ✨ Explore the demo account
+        <Icons.spark size={18} strokeWidth={2} className="mr-2" /> Explore the demo account
       </button>
 
       <p className="mt-6 text-center text-sm text-slate-500">

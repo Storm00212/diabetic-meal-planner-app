@@ -1,4 +1,5 @@
 import { AuthForm } from "./AuthForm";
+import { Icons } from "@/shared/components/Icons";
 
 /**
  * The sign-in screen: a brand panel on the left, the form on the right.
@@ -10,7 +11,7 @@ export function AuthPage() {
       <section className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-teal-600 via-emerald-600 to-green-700 p-12 text-white">
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-xl font-bold">
-            <span className="text-3xl">🍽️</span> GlucoPlate
+            <Icons.bucket_card className="text-3xl" /> GlucoPlate
           </div>
         </div>
         <div className="relative z-10 max-w-md space-y-6">
@@ -24,15 +25,21 @@ export function AuthPage() {
           </p>
           <ul className="space-y-3 text-emerald-50/90">
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">💰</span>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+                <Icons.budget size={20} strokeWidth={2} />
+              </span>
               Plans that respect your budget
             </li>
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">🩸</span>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+                <Icons.carbs size={20} strokeWidth={2} />
+              </span>
               Low glycemic-index prioritisation
             </li>
             <li className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">📊</span>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15">
+                <Icons.analytics size={20} strokeWidth={2} />
+              </span>
               Track carbs, calories & cost
             </li>
           </ul>

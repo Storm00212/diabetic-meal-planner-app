@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { api } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 
 type Message = { role: 'user' | 'assistant'; text: string; fallback?: boolean };
 
@@ -64,7 +65,7 @@ export function AskGlucoPlate() {
   return (
     <SafeAreaView className="flex-1 bg-white rounded-2xl border border-slate-200 p-4">
       <View className="flex-row items-center gap-2 mb-4">
-        <Text className="text-2xl">🤖</Text>
+        <Icons.ai size={26} strokeWidth={2} />
         <Text className="text-lg font-semibold text-slate-900">Ask GlucoPlate</Text>
       </View>
 

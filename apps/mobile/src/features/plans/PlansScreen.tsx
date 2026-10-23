@@ -12,12 +12,13 @@ import { useRouter } from 'expo-router';
 import { money, formatDate } from '@glucoplate/domain';
 import { giBand } from '@glucoplate/domain';
 import { apiFetch, apiJson } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 import type { MealPlanItem, MealPlanWithItems } from '@glucoplate/types';
 
-const SLOT_META: Record<string, { label: string; icon: string }> = {
-  morning: { label: "Morning", icon: "🌅" },
-  afternoon: { label: "Afternoon", icon: "☀️" },
-  evening: { label: "Evening", icon: "🌙" },
+const SLOT_META: Record<string, { label: string; iconKey: keyof typeof Icons }> = {
+  morning: { label: "Morning", iconKey: "morning" },
+  afternoon: { label: "Afternoon", iconKey: "afternoon" },
+  evening: { label: "Evening", iconKey: "evening" },
 };
 const SLOT_ORDER = ["morning", "afternoon", "evening"];
 
@@ -135,7 +136,7 @@ export default function PlansScreen() {
           </View>
         ) : plans.length === 0 ? (
           <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 items-center text-center">
-            <Text className="text-4xl mb-3">📅</Text>
+            <Icons.calendar size={36} strokeWidth={2} className="mb-3" />
             <Text className="text-lg font-semibold text-slate-800">No saved plans yet</Text>
             <Text className="mt-1 text-slate-500">
               Generate a daily meal plan and save it to see it here.
@@ -202,13 +203,14 @@ export default function PlansScreen() {
                       const item = plan.items.find((i) => i.slot === slot);
                       const meta = SLOT_META[slot];
                       const reason = item ? reasonFor(item) : null;
+                      const SlotIcon = Icons[meta.iconKey];
                       return (
                         <View
                           key={slot}
                           className="flex-1 min-w-[100px] rounded-xl border border-slate-100 bg-slate-50 p-3"
                         >
                           <View className="flex-row items-center gap-1.5">
-                            <Text className="text-xs">{meta.icon}</Text>
+                            <SlotIcon size={14} strokeWidth={2} />
                             <Text className="text-xs font-semibold text-slate-500">{meta.label}</Text>
                           </View>
                           {item ? (
@@ -240,7 +242,12 @@ export default function PlansScreen() {
                                   }`}
                                 >
                                   <Text className={`text-[10px] font-bold ${item.status === "eaten" ? "text-white" : "text-slate-600"}`}>
-                                    {item.status === "eaten" ? "✓ Eaten" : "Mark Eaten"}
+                                    {item.status === "eaten" ? (
+                                    <View className="flex-row items-center justify-center gap-1">
+                                      <Icons.check size={10} strokeWidth={2} />
+                                      <Text className="text-white">Eaten</Text>
+                                    </View>
+                                  ) : "Mark Eaten"}
                                   </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
@@ -253,7 +260,12 @@ export default function PlansScreen() {
                                   }`}
                                 >
                                   <Text className={`text-[10px] font-bold ${item.status === "skipped" ? "text-white" : "text-slate-600"}`}>
-                                    {item.status === "skipped" ? "✕ Skipped" : "Skip"}
+                                    {item.status === "skipped" ? (
+                                    <View className="flex-row items-center justify-center gap-1">
+                                      <Icons.close size={10} strokeWidth={2} />
+                                      <Text className="text-white">Skipped</Text>
+                                    </View>
+                                  ) : "Skip"}
                                   </Text>
                                 </TouchableOpacity>
                               </View>

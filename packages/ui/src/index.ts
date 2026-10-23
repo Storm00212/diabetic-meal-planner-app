@@ -94,24 +94,49 @@ export const tailwindTheme = {
   },
 } as const;
 
+/** Light-mode color values used by both platforms. */
+export const lightColors = {
+  brand: palette.brand[600],
+  brandLight: palette.brand[100],
+  brandDark: palette.brand[800],
+  success: palette.emerald[600],
+  successLight: palette.emerald[100],
+  danger: palette.rose[600],
+  dangerLight: palette.rose[100],
+  warning: palette.amber[700],
+  warningLight: palette.amber[100],
+  text: palette.slate[900],
+  textMuted: palette.slate[500],
+  border: palette.slate[200],
+  surface: palette.white,
+  background: palette.slate[50],
+} as const;
+
+/** Dark-mode color values used by both platforms. */
+export const darkColors = {
+  brand: palette.brand[400],
+  brandLight: palette.brand[900],
+  brandDark: palette.brand[300],
+  success: palette.emerald[600],
+  successLight: palette.emerald[700],
+  danger: palette.rose[600],
+  dangerLight: palette.rose[800],
+  warning: palette.amber[700],
+  warningLight: palette.amber[700],
+  text: palette.slate[100],
+  textMuted: palette.slate[400],
+  border: palette.slate[700],
+  surface: palette.slate[900],
+  background: palette.slate[900],
+} as const;
+
 /** The React Native theme object the mobile app applies. */
 export const nativeTheme = {
   colors: {
-    brand: palette.brand[600],
-    brandLight: palette.brand[100],
-    brandDark: palette.brand[800],
-    success: palette.emerald[600],
-    successLight: palette.emerald[100],
-    danger: palette.rose[600],
-    dangerLight: palette.rose[100],
-    warning: palette.amber[700],
-    warningLight: palette.amber[100],
-    text: palette.slate[900],
-    textMuted: palette.slate[500],
-    border: palette.slate[200],
-    surface: palette.white,
-    background: palette.slate[50],
+    ...lightColors,
   },
+  darkColors,
+  lightColors,
   spacing: {
     xs: spacing.xs,
     sm: spacing.sm,

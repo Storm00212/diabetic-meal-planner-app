@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { apiFetch, writeToken } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -83,7 +84,7 @@ export default function AuthScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6 justify-center">
         <View className="mb-8 items-center">
-          <Text className="text-3xl">🍽️</Text>
+          <Icons.bucket_card size={32} strokeWidth={2} />
           <Text className="text-2xl font-bold text-teal-700">GlucoPlate</Text>
         </View>
 
@@ -157,7 +158,8 @@ export default function AuthScreen() {
             disabled={loading}
             className="w-full rounded-lg border border-slate-300 py-3 items-center bg-white"
           >
-            <Text className="font-medium text-slate-700 text-base">✨ Explore the demo account</Text>
+            <Icons.spark size={18} strokeWidth={2} style={{ marginRight: 6 }} />
+            <Text className="font-medium text-slate-700 text-base">Explore the demo account</Text>
           </TouchableOpacity>
         </View>
 

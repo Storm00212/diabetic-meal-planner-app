@@ -1,5 +1,6 @@
 import React from "react";
 import { clinicianBannerFor } from "@glucoplate/domain";
+import { Icons } from "./Icons";
 
 /**
  * The "consult your clinician" banner.
@@ -34,9 +35,7 @@ export function ClinicianBanner({
         gap: 12,
       }}
     >
-      <span aria-hidden style={{ fontSize: 18, lineHeight: 22 }}>
-        ⚠️
-      </span>
+      <Icons.warning className="shrink-0" size={18} strokeWidth={2} />
       <div style={{ flex: 1 }}>
         <strong style={{ display: "block", fontWeight: 700, color: "#9f1239" }}>
           Talk to your clinician first

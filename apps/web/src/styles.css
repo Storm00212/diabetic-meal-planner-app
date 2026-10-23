@@ -8,6 +8,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Dark mode surface overrides for components not covered by Tailwind `dark:` */
+.dark {
+  --brand: #34d399;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -6,11 +6,12 @@ import { money, formatDate } from "@glucoplate/domain";
 import { giBand } from "@glucoplate/domain";
 import type { MealPlanItem, MealPlanWithItems } from "@glucoplate/types";
 import { Link } from "react-router-dom";
+import { Icons } from "@/shared/components/Icons";
 
-const SLOT_META: Record<string, { label: string; icon: string }> = {
-  morning: { label: "Morning", icon: "🌅" },
-  afternoon: { label: "Afternoon", icon: "☀️" },
-  evening: { label: "Evening", icon: "🌙" },
+const SLOT_META: Record<string, { label: string; iconKey: keyof typeof Icons }> = {
+  morning: { label: "Morning", iconKey: "morning" },
+  afternoon: { label: "Afternoon", iconKey: "afternoon" },
+  evening: { label: "Evening", iconKey: "evening" },
 };
 const SLOT_ORDER = ["morning", "afternoon", "evening"];
 
@@ -118,10 +119,10 @@ export function PlansPage() {
           ))}
         </div>
       ) : plans.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <div className="text-4xl">📅</div>
-          <p className="mt-3 text-lg font-semibold text-slate-800">
-            No saved plans yet
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+            <Icons.calendar className="text-4xl" strokeWidth={2} />
+            <p className="mt-3 text-lg font-semibold text-slate-800">
+              No saved plans yet
           </p>
           <p className="mt-1 text-slate-500">
             Generate a daily meal plan and save it to see it here.
@@ -188,13 +189,15 @@ export function PlansPage() {
                     const item = plan.items.find((i) => i.slot === slot);
                     const meta = SLOT_META[slot];
                     const reason = item ? reasonFor(item) : null;
+                    const SlotIcon = Icons[meta.iconKey];
                     return (
                       <div
                         key={slot}
                         className="rounded-xl border border-slate-100 bg-slate-50 p-3"
                       >
                         <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                          <span>{meta.icon}</span> {meta.label}
+                          <SlotIcon size={14} strokeWidth={2} />{" "}
+                          {meta.label}
                         </p>
                         {item ? (
                           <>
@@ -226,7 +229,7 @@ export function PlansPage() {
                                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                                 }`}
                                 >
-                                {item.status === "eaten" ? "✓ Eaten" : "Mark Eaten"}
+                                {item.status === "eaten" ? "Eaten" : "Mark Eaten"}
                               </button>
                               <button
                                 onClick={() => handleUpdateStatus(item.id, "skipped")}
@@ -236,8 +239,8 @@ export function PlansPage() {
                                     ? "bg-slate-400 text-white"
                                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                                 }`}
-                                >
-                                {item.status === "skipped" ? "✕ Skipped" : "Skip"}
+                              >
+                                {item.status === "skipped" ? "Skipped" : "Skip"}
                               </button>
                             </div>
                           </>

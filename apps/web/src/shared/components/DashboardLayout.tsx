@@ -4,15 +4,16 @@ import { Logo } from "./Logo";
 import { useAuth } from "@/app/AuthProvider";
 import { ClinicianBanner } from "./ClinicianBanner";
 import { Icons, iconLabel } from "./Icons";
+import { useTheme } from "./ThemeProvider";
 
-const NAV = [
-  { href: "/dashboard", label: "Overview", icon: Icons.bucket_card },
-  { href: "/dashboard/dishes", label: "My Bucket", icon: Icons.bucket },
-  { href: "/dashboard/planner", label: "Meal Planner", icon: Icons.planner },
-  { href: "/dashboard/plans", label: "Saved Plans", icon: Icons.plans },
-  { href: "/dashboard/analytics", label: "Analytics", icon: Icons.analytics },
-  { href: "/dashboard/health-hub", label: "Health Hub", icon: Icons.health },
-  { href: "/dashboard/settings", label: "Settings", icon: Icons.settings },
+const NAV: { href: string; label: string; iconKey: keyof typeof Icons }[] = [
+  { href: "/dashboard", label: "Overview", iconKey: "bucket_card" },
+  { href: "/dashboard/dishes", label: "My Bucket", iconKey: "bucket" },
+  { href: "/dashboard/planner", label: "Meal Planner", iconKey: "planner" },
+  { href: "/dashboard/plans", label: "Saved Plans", iconKey: "plans" },
+  { href: "/dashboard/analytics", label: "Analytics", iconKey: "analytics" },
+  { href: "/dashboard/health-hub", label: "Health Hub", iconKey: "health" },
+  { href: "/dashboard/settings", label: "Settings", iconKey: "settings" },
 ];
 
 /**
@@ -22,6 +23,7 @@ export function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, banner, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
   async function logout() {
@@ -39,29 +41,42 @@ export function DashboardLayout() {
   const pathname = location.pathname;
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr] bg-slate-50 dark:bg-slate-900">
       {/* Mobile top bar */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
-        <div className="flex items-center gap-2 font-bold text-teal-700">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 lg:hidden min-h-[56px]">
+        <div className="flex items-center gap-2 font-bold text-teal-700 dark:text-teal-400">
           <Logo />
         </div>
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="rounded-lg border border-slate-300 p-2 text-slate-600"
-          aria-label="Toggle menu"
-        >
-          {open ? Icons.close : "☰"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 p-2.5 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-600 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {theme === "light" ? (
+              <Icons.themeDark size={20} strokeWidth={2} />
+            ) : (
+              <Icons.themeLight size={20} strokeWidth={2} />
+            )}
+          </button>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 p-2.5 text-slate-600 dark:text-slate-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Toggle menu"
+          >
+            <Icons.menu size={20} strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       {/* Sidebar */}
       <aside
         className={`${
           open ? "block" : "hidden"
-        } border-r border-slate-200 bg-white lg:block`}
+        } border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 lg:block`}
       >
         <div className="sticky top-0 flex h-full flex-col p-4 lg:h-screen">
-          <div className="hidden items-center gap-2 px-2 py-3 text-xl font-bold text-teal-700 lg:flex">
+          <div className="hidden items-center gap-2 px-2 py-3 text-xl font-bold text-teal-700 dark:text-teal-400 lg:flex">
             <Logo />
           </div>
 
@@ -71,6 +86,7 @@ export function DashboardLayout() {
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
+              const NavIcon = Icons[item.iconKey];
               return (
                 <Link
                   key={item.href}
@@ -78,33 +94,35 @@ export function DashboardLayout() {
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                     active
-                      ? "bg-teal-50 text-teal-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white"
                   }`}
-                  aria-label={iconLabel(item.icon as keyof typeof Icons)}
+                  aria-label={iconLabel(item.iconKey)}
                 >
-                  <span className="text-lg" aria-hidden="true">{item.icon}</span>
+                  <span className="text-lg" aria-hidden="true">
+                    <NavIcon size={20} strokeWidth={2} />
+                  </span>
                   {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 p-3">
             <div className="flex items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-teal-600 text-sm font-semibold text-white">
                 {initials}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-800">
+                <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                   {user?.name}
                 </p>
-                <p className="truncate text-xs text-slate-500">{user?.email}</p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={logout}
-              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+              className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-600"
             >
               Log out
             </button>
@@ -113,7 +131,7 @@ export function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
         {banner ? <ClinicianBanner message={banner} /> : null}
         <Outlet />
       </main>

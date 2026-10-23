@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/app/api";
 import { usePopupTriggers } from "@/shared/components/PopupSystem";
 import { Icons } from "@/shared/components/Icons";
+import { useNavigate } from "react-router-dom";
 
 export function WeightTracker() {
   const { triggerMilestone } = usePopupTriggers();
@@ -33,6 +34,12 @@ export function WeightTracker() {
     };
   }, []);
 
+  const navigate = useNavigate();
+
+  function openTargetWeightSettings() {
+    navigate("/dashboard/settings");
+  }
+
   async function handleLog() {
     if (!input) return;
     const isFirstLog = !hasLoggedBefore;
@@ -52,7 +59,7 @@ export function WeightTracker() {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Weight Tracker</h2>
-        <span className="text-2xl" aria-hidden="true">{Icons.weight}</span>
+        <Icons.weight className="text-2xl" aria-hidden="true" strokeWidth={2} />
       </div>
 
       <div className="flex items-end gap-4 mb-8">
@@ -62,7 +69,18 @@ export function WeightTracker() {
         </div>
         <div className="text-right">
           <p className="text-xs font-medium text-slate-500 uppercase">Target</p>
-          <p className="text-xl font-semibold text-teal-600">{targetWeight || "--"} kg</p>
+          <div className="flex items-end gap-1">
+            <p className="text-xl font-semibold text-teal-600">
+              {targetWeight || "--"}
+            </p>
+            <span className="text-xs text-slate-400">kg</span>
+          </div>
+          <button
+            onClick={openTargetWeightSettings}
+            className="mt-1 text-xs font-medium text-teal-600 hover:underline"
+          >
+            Set target weight
+          </button>
         </div>
       </div>
 
@@ -84,7 +102,8 @@ export function WeightTracker() {
 
       <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
         <p className="text-sm text-slate-600 italic">
-          "Based on your current meal plan, you are in a slight caloric deficit. Estimated weight trend: {Icons.trend_down} 0.2kg / week"
+          "Based on your current meal plan, you are in a slight caloric deficit. Estimated weight trend: "
+          <Icons.trend_down className="inline" size={14} strokeWidth={2} /> 0.2kg / week
         </p>
       </div>
     </div>

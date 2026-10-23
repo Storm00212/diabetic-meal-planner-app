@@ -110,7 +110,7 @@ export function OverviewPage() {
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <span className="text-2xl">{c.icon}</span>
+              <c.icon size={24} strokeWidth={2} className="text-2xl" />
             </div>
             <p className="mt-3 text-2xl font-bold text-slate-900">{c.value}</p>
             <p className="text-sm font-medium text-slate-600">{c.label}</p>
@@ -131,7 +131,9 @@ export function OverviewPage() {
               to="/dashboard/dishes"
               className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
             >
-              <div className="text-2xl" aria-hidden="true">{Icons.bucket}</div>
+              <div className="text-2xl" aria-hidden="true">
+                <Icons.bucket size={24} strokeWidth={2} />
+              </div>
               <p className="mt-2 font-semibold text-slate-800">
                 Manage your bucket
               </p>
@@ -143,7 +145,9 @@ export function OverviewPage() {
               to="/dashboard/planner"
               className="group rounded-xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40"
             >
-              <div className="text-2xl" aria-hidden="true">{Icons.planner}</div>
+              <div className="text-2xl" aria-hidden="true">
+                <Icons.planner size={24} strokeWidth={2} />
+              </div>
               <p className="mt-2 font-semibold text-slate-800">
                 Generate a meal plan
               </p>
@@ -155,7 +159,8 @@ export function OverviewPage() {
 
           <div className="mt-6 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 p-5 text-white">
             <p className="text-sm/relaxed">
-              {Icons.tip} <strong>Tip:</strong> Add plenty of low-GI dishes (index ≤ 55)
+              <Icons.tip size={14} strokeWidth={2} style={{ verticalAlign: "middle" }} className="mr-1.5" />{" "}
+              <strong>Tip:</strong> Add plenty of low-GI dishes (index ≤ 55)
               to your bucket. GlucoPlate always prioritises the safest, cheapest
               options so your blood sugar stays stable.
             </p>
@@ -208,7 +213,9 @@ export function OverviewPage() {
         </div>
         {recent.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-            <div className="text-3xl" aria-hidden="true">{Icons.calendar}</div>
+            <div className="text-3xl" aria-hidden="true">
+              <Icons.calendar size={32} strokeWidth={2} />
+            </div>
             <p className="mt-2 font-medium text-slate-700">No plans yet</p>
             <p className="text-sm text-slate-500">
               Generate your first daily meal plan to see it here.

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from "react-native";
 import { Sparkles } from 'lucide-react-native';
+import { Icons } from '@/shared/components/Icons';
 import type { Dish, DishFormValues } from '@glucoplate/types';
 
 
@@ -145,7 +146,7 @@ export default function DishModal({
               onPress={onClose}
               className="p-1.5"
             >
-              <Text className="text-slate-400 text-xl">✕</Text>
+              <Icons.close size={20} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 

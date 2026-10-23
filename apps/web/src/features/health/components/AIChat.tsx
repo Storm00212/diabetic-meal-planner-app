@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/app/api";
+import { Icons } from "@/shared/components/Icons";
 
 
 type Message = {
@@ -44,7 +45,7 @@ export function AIChat() {
     <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm h-[450px]">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Medical Assistant</h2>
-        <span className="text-2xl">🤖</span>
+        <Icons.ai className="text-2xl" aria-hidden="true" strokeWidth={2} />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin scrollbar-thumb-slate-200">

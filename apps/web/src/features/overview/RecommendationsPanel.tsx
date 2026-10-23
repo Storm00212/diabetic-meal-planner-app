@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/app/api";
 import { money } from "@glucoplate/domain";
 import type { RecommendationResponse } from "@glucoplate/types";
+import { Icons } from "@/shared/components/Icons";
 
 export function RecommendationsPanel() {
   const [recommendation, setRecommendation] = useState<RecommendationResponse | null>(null);
@@ -48,7 +49,7 @@ export function RecommendationsPanel() {
   return (
     <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-2xl">💡</span>
+        <Icons.spark size={22} strokeWidth={2} />
         <h3 className="text-lg font-semibold text-teal-900">Your Recommendation</h3>
         {recommendation.fallback && (
           <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">

@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { clinicianBannerFor } from "@glucoplate/domain";
+import { Icons } from "./Icons";
 
 /**
  * The "consult your clinician" banner.
@@ -31,7 +32,7 @@ export function ClinicianBanner({
         gap: 12,
       }}
     >
-      <Text style={{ fontSize: 18, lineHeight: 22 }}>⚠️</Text>
+      <Icons.warning size={18} strokeWidth={2} />
       <View style={{ flex: 1 }}>
         <Text
           style={{ fontWeight: "700", color: "#9f1239", marginBottom: 2 }}

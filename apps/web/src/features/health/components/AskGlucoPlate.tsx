@@ -57,7 +57,7 @@ export function AskGlucoPlate() {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl" aria-hidden="true">{Icons.ai}</span>
+        <Icons.ai size={24} strokeWidth={2} className="text-2xl" aria-hidden="true" />
         <h3 className="text-lg font-semibold text-slate-900">Ask GlucoPlate</h3>
       </div>
 

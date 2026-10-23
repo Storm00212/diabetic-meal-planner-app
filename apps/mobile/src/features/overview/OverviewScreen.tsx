@@ -5,6 +5,7 @@ import { api } from '@/lib/api-client';
 import { useCurrentUser } from '@/shared/useCurrentUser';
 import { money, giBand } from '@glucoplate/domain';
 import { Activity, Utensils, Wallet, Calendar } from 'lucide-react-native';
+import { Icons } from '@/shared/components/Icons';
 
 type DishStats = { total: number; avgCost: number; avgGi: number };
 
@@ -139,8 +140,9 @@ export default function OverviewPage() {
           </View>
 
           <View className="mt-6 rounded-xl bg-teal-600 p-5">
-            <Text className="text-sm text-white leading-relaxed">
-              💡 <Text className="font-bold">Tip:</Text> Add plenty of low-GI dishes (index ≤ 55).
+              <Text className="text-sm text-white leading-relaxed">
+                <Icons.spark size={16} strokeWidth={2} style={{ marginRight: 6 }} />{" "}
+                <Text className="font-bold">Tip:</Text> Add plenty of low-GI dishes (index ≤ 55).
               GlucoPlate prioritises the safest, cheapest options.
             </Text>
           </View>
@@ -156,7 +158,7 @@ export default function OverviewPage() {
 
           {recent.length === 0 ? (
             <View className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 items-center">
-              <Text className="text-3xl">📅</Text>
+              <Icons.calendar size={32} strokeWidth={2} />
               <Text className="mt-2 font-medium text-slate-700">No plans yet</Text>
               <Link href="/dashboard/planner" asChild>
                 <TouchableOpacity className="mt-4 rounded-lg bg-teal-600 px-4 py-2">

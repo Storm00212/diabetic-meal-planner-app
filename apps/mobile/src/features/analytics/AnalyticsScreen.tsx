@@ -9,6 +9,7 @@ import {
 import { money } from '@glucoplate/domain';
 import { giBand } from '@glucoplate/domain';
 import { apiFetch } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 
 export default function AnalyticsScreen() {
   const [data, setData] = useState<any>(null);
@@ -64,19 +65,19 @@ export default function AnalyticsScreen() {
           <StatCard
             label="Total Plans"
             value={summary.totalPlans}
-            icon="📅"
+            iconKey="calendar"
             description="Days planned"
           />
           <StatCard
             label="Money Saved"
             value={money(summary.savings)}
-            icon="💰"
+            iconKey="budget"
             description="Budget vs Actual"
           />
           <StatCard
             label="Avg. Spend"
             value={money(summary.totalSpent / (summary.totalPlans || 1))}
-            icon="📉"
+            iconKey="trend_down"
             description="Per planned day"
           />
         </View>
@@ -144,11 +145,12 @@ export default function AnalyticsScreen() {
   );
 }
 
-function StatCard({ label, value, icon, description }: any) {
+function StatCard({ label, value, iconKey, description }: { label: string; value: any; iconKey: keyof typeof Icons; description: string }) {
+  const Icon = Icons[iconKey];
   return (
     <View className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <View className="flex-row items-center gap-3 mb-4">
-        <Text className="text-2xl">{icon}</Text>
+        <Icon size={26} strokeWidth={2} />
         <Text className="text-sm font-medium text-slate-500">{label}</Text>
       </View>
       <Text className="text-3xl font-bold text-slate-900">{value}</Text>

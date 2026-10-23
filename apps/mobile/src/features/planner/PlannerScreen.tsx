@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, SafeAreaView } fro
 import { useRouter } from 'expo-router';
 import { explainDish, giBand, money, summariseSlots } from '@glucoplate/domain';
 import { api, apiFetch, apiJson } from '@/lib/api-client';
+import { Icons } from '@/shared/components/Icons';
 import type {
   Dish,
   GeneratePlanResponse,
@@ -11,10 +12,10 @@ import type {
   SwapCandidate,
 } from '@glucoplate/types';
 
-const SLOTS: { key: MealSlot; label: string; icon: string; time: string }[] = [
-  { key: "morning", label: "Morning", icon: "🌅", time: "Breakfast" },
-  { key: "afternoon", label: "Afternoon", icon: "☀️", time: "Lunch" },
-  { key: "evening", label: "Evening", icon: "🌙", time: "Dinner" },
+const SLOTS: { key: MealSlot; label: string; iconKey: keyof typeof Icons; time: string }[] = [
+  { key: "morning", label: "Morning", iconKey: "morning", time: "Breakfast" },
+  { key: "afternoon", label: "Afternoon", iconKey: "afternoon", time: "Lunch" },
+  { key: "evening", label: "Evening", iconKey: "evening", time: "Dinner" },
 ];
 
 /** A pantry item is free, so it never counts towards the budget. */
@@ -246,9 +247,12 @@ export default function PlannerScreen() {
                 disabled={loading}
                 className={`mt-2 w-full rounded-lg py-3 font-semibold text-white ${loading ? 'bg-slate-400' : 'bg-teal-600'}`}
               >
-                <Text className="text-center font-bold">
-                  {loading ? "Allocating meals…" : "⚡ Generate meal plan"}
-                </Text>
+                <View className="flex-row items-center justify-center gap-2">
+                  {!loading && <Icons.generate size={16} strokeWidth={2} />}
+                  <Text className="font-bold">
+                    {loading ? "Allocating meals…" : "Generate meal plan"}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -256,7 +260,7 @@ export default function PlannerScreen() {
 
         {error && (
           <View className="rounded-2xl border border-rose-200 bg-rose-50 p-6 items-center text-center mb-6">
-            <Text className="text-3xl mb-2">🧺</Text>
+            <Icons.bucket size={32} strokeWidth={2} />
             <Text className="font-semibold text-rose-800">{error}</Text>
             <TouchableOpacity
               onPress={() => router.push("/dashboard/dishes")}
@@ -304,6 +308,7 @@ export default function PlannerScreen() {
                 const original = plan.slots[s.key];
                 const dish = overrides[s.key] ?? original;
                 const swapped = overrides[s.key] !== null;
+                const SlotIcon = Icons[s.iconKey];
                 // The planner explains its own choices. A swapped-in dish is
                 // explained here, against the same limits, so the numbers stay
                 // true after the swap.
@@ -328,7 +333,7 @@ export default function PlannerScreen() {
                 return (
                   <View key={s.key} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <View className="flex-row items-center gap-2">
-                      <Text className="text-2xl">{s.icon}</Text>
+                      <SlotIcon size={28} strokeWidth={2} />
                       <View>
                         <Text className="font-semibold text-slate-900">{s.label}</Text>
                         <Text className="text-xs text-slate-400">{s.time}</Text>
@@ -451,7 +456,10 @@ export default function PlannerScreen() {
                 onPress={generate}
                 className="flex-1 rounded-lg border border-slate-300 py-2.5 items-center"
               >
-                <Text className="text-sm font-medium text-slate-600">🔄 Regenerate</Text>
+                <View className="flex-row items-center justify-center gap-1">
+                  <Icons.regenerate size={14} strokeWidth={2} />
+                  <Text className="text-sm font-medium text-slate-600">Regenerate</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={save}
@@ -459,7 +467,12 @@ export default function PlannerScreen() {
                 className={`flex-1 rounded-lg py-2.5 items-center ${saving ? 'bg-slate-400' : 'bg-teal-600'}`}
               >
                 <Text className="text-sm font-semibold text-white">
-                  {saving ? "Saving…" : "💾 Save this plan"}
+                  {saving ? "Saving…" : (
+                    <View className="flex-row items-center justify-center gap-1">
+                      <Icons.save size={14} strokeWidth={2} />
+                      <Text className="text-sm font-semibold text-white">Save this plan</Text>
+                    </View>
+                  )}
                 </Text>
               </TouchableOpacity>
             </View>

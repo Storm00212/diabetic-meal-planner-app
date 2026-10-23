@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/app/api";
 import { money } from "@glucoplate/domain";
 import { giBand } from "@glucoplate/domain";
+import { Icons } from "@/shared/components/Icons";
 
 export function AnalyticsPage() {
   const [data, setData] = useState<any>(null);
@@ -66,19 +67,19 @@ export function AnalyticsPage() {
         <StatCard
           label="Total Plans"
           value={summary.totalPlans}
-          icon="📅"
+          icon="calendar"
           description="Days planned"
         />
         <StatCard
           label="Money Saved"
           value={money(summary.savings)}
-          icon="💰"
+          icon="budget"
           description="Budget vs Actual"
         />
         <StatCard
           label="Avg. Spend"
           value={money(summary.totalSpent / (summary.totalPlans || 1))}
-          icon="📉"
+          icon="trend_down"
           description="Per planned day"
         />
       </div>
@@ -145,11 +146,12 @@ export function AnalyticsPage() {
   );
 }
 
-function StatCard({ label, value, icon, description }: any) {
+function StatCard({ label, value, icon, description }: { label: string; value: React.ReactNode; icon: keyof typeof Icons; description: string }) {
+  const Icon = Icons[icon];
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">{icon}</span>
+        <Icon className="text-2xl" strokeWidth={2} />
         <span className="text-sm font-medium text-slate-500">{label}</span>
       </div>
       <div className="text-3xl font-bold text-slate-900">{value}</div>

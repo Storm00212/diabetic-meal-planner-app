@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/app/api";
 import { useAuth } from "@/app/AuthProvider";
+import { useTheme } from "@/shared/components/ThemeProvider";
+import { Icons } from "@/shared/components/Icons";
 import { ACTIVITY_LABELS } from "@glucoplate/domain";
 import type {
   ActivityLevel,
@@ -44,6 +46,7 @@ function measurement(value: string): number | null {
 
 export function SettingsPage() {
   const { user, refresh } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [name, setName] = useState(user?.name ?? "");
   const [dailyBudget, setDailyBudget] = useState(user?.dailyBudget ?? 300);
   const [dailyCarbTarget, setDailyCarbTarget] = useState(
@@ -62,6 +65,9 @@ export function SettingsPage() {
   );
   const [targetWeight, setTargetWeight] = useState(
     user?.targetWeight ? String(user.targetWeight) : "",
+  );
+  const [targetWeightError, setTargetWeightError] = useState<string | null>(
+    null,
   );
   const [sex, setSex] = useState<Sex>(user?.sex ?? "unspecified");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
@@ -144,6 +150,62 @@ export function SettingsPage() {
     }
   }
 
+  async function saveTargetWeight(e: React.FormEvent) {
+    e.preventDefault();
+    setProfileSaving(true);
+    setTargetWeightError(null);
+
+    const parsed = Number(targetWeight);
+    if (
+      !targetWeight.trim() ||
+      !Number.isFinite(parsed) ||
+      parsed < 30 ||
+      parsed > 250
+    ) {
+      setTargetWeightError("Enter a valid weight between 30 and 250 kg.");
+      setProfileSaving(false);
+      return;
+    }
+
+    try {
+      await api.user.updateSettings(
+        { targetWeight: parsed } as unknown as UpdateSettingsRequest,
+      );
+      showToast("Target weight saved.");
+      void refresh();
+    } catch (err) {
+      setTargetWeightError(
+        err instanceof Error
+          ? err.message
+          : "Could not save your target weight.",
+      );
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  function weightDiffFormatted(
+    current: string,
+    target: string,
+  ): string {
+    const c = Number(current);
+    const t = Number(target);
+    if (!Number.isFinite(c) || !Number.isFinite(t)) return "--";
+    const diff = t - c;
+    return `${diff >= 0 ? "+" : ""}${diff.toFixed(1)} kg`;
+  }
+
+  function weightProgressPercent(
+    current: string,
+    target: string,
+  ): string {
+    const c = Number(current);
+    const t = Number(target);
+    if (!Number.isFinite(c) || !Number.isFinite(t) || t === 0) return "0%";
+    const pct = ((c / t) * 100).toFixed(0);
+    return `${Math.min(100, Math.max(0, Number(pct)))}%`;
+  }
+
   return (
     <div className="mx-auto max-w-2xl animate-fade-in space-y-6">
       <header>
@@ -153,6 +215,33 @@ export function SettingsPage() {
           these to build affordable, sugar-safe plans.
         </p>
       </header>
+
+      {/* Appearance */}
+      <div
+        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Appearance
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Choose a theme that is comfortable for your eyes.
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 p-3 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-600"
+            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {theme === "light" ? (
+              <Icons.themeDark size={20} strokeWidth={2} />
+            ) : (
+              <Icons.themeLight size={20} strokeWidth={2} />
+            )}
+          </button>
+        </div>
+      </div>
 
       <form
         onSubmit={save}
@@ -218,7 +307,8 @@ export function SettingsPage() {
         </div>
 
         <div className="rounded-xl bg-teal-50 p-4 text-sm text-teal-800">
-          🩺 Always coordinate your budget and carb targets with your doctor or
+          <Icons.stethoscope className="inline mr-1.5" size={14} strokeWidth={1.5} />
+          Always coordinate your budget and carb targets with your doctor or
           dietitian. GlucoPlate is a planning aid, not medical advice.
         </div>
 
@@ -229,6 +319,92 @@ export function SettingsPage() {
             className="rounded-lg bg-teal-600 px-5 py-2.5 font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save changes"}
+          </button>
+        </div>
+      </form>
+
+      {/* Target weight */}
+      <form
+        onSubmit={saveTargetWeight}
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      >
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Target weight
+          </h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Set your goal weight. Your clinician can help you choose a healthy,
+            realistic target.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
+              Current weight (kg)
+            </label>
+            <input
+              type="number"
+              min="30"
+              max="250"
+              step="0.5"
+              value={currentWeight}
+              onChange={(e) => setCurrentWeight(e.target.value)}
+              placeholder="e.g. 72"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
+              Target weight (kg)
+            </label>
+            <input
+              type="number"
+              min="30"
+              max="250"
+              step="0.5"
+              value={targetWeight}
+              onChange={(e) => setTargetWeight(e.target.value)}
+              placeholder="e.g. 68"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+            />
+            {targetWeightError && (
+              <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                {targetWeightError}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {currentWeight !== null && targetWeight !== null && (
+          <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-slate-500 dark:text-slate-400">
+                Difference
+              </span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {weightDiffFormatted(currentWeight, targetWeight)}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-teal-600"
+                style={{ width: weightProgressPercent(currentWeight, targetWeight) }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Progress from current to target weight.
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={profileSaving}
+            className="rounded-lg bg-teal-600 px-5 py-2.5 font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+          >
+            {profileSaving ? "Saving…" : "Save target weight"}
           </button>
         </div>
       </form>

@@ -1,76 +1,84 @@
 /**
- * Simple text-based icon replacements for emojis.
+ * Lucide icon replacements for emojis.
  * Use these instead of emoji characters for consistent rendering.
  */
 
+import * as Lucide from "lucide-react";
+
 export const Icons = {
+  // Theme
+  themeLight: Lucide.Sun,
+  themeDark: Lucide.Moon,
+
   // Navigation / Layout
-  bucket: "🧺",
-  planner: "🍽️",
-  plans: "📅",
-  analytics: "📊",
-  health: "🏥",
-  settings: "⚙️",
-  
+  bucket: Lucide.Folder,
+  planner: Lucide.Utensils,
+  plans: Lucide.Calendar,
+  analytics: Lucide.BarChart,
+  health: Lucide.Hospital,
+  settings: Lucide.Settings,
+
   // Meal slots
-  morning: "🌅",
-  afternoon: "☀️",
-  evening: "🌙",
-  
+  morning: Lucide.Sun,
+  afternoon: Lucide.Sun,
+  evening: Lucide.Moon,
+
   // Actions
-  generate: "⚡",
-  regenerate: "🔄",
-  save: "💾",
-  add: "+",
-  edit: "✏️",
-  delete: "🗑️",
-  swap: "⇄",
-  
+  generate: Lucide.Zap,
+  regenerate: Lucide.RefreshCw,
+  save: Lucide.Save,
+  add: Lucide.Plus,
+  edit: Lucide.Edit,
+  delete: Lucide.Trash2,
+  swap: Lucide.Shuffle,
+
   // Status
-  success: "✓",
-  error: "✕",
-  warning: "⚠",
-  info: "ℹ",
-  
+  success: Lucide.Check,
+  error: Lucide.X,
+  warning: Lucide.AlertTriangle,
+  info: Lucide.Info,
+
   // Health
-  weight: "⚖️",
-  target: "🎯",
-  trend_up: "▲",
-  trend_down: "▼",
-  trend_stable: "●",
-  
+  weight: Lucide.Scale,
+  target: Lucide.Target,
+  trend_up: Lucide.ChevronUp,
+  trend_down: Lucide.ChevronDown,
+  trend_stable: Lucide.Minus,
+
   // AI
-  ai: "🤖",
-  spark: "💡",
-  star: "⭐",
-  
+  ai: Lucide.Bot,
+  spark: Lucide.Lightbulb,
+  star: Lucide.Star,
+
   // Dashboard cards
-  budget: "💰",
-  carbs: "🩸",
-  calendar: "📅",
-  bucket_card: "🧺",
-  
+  budget: Lucide.Wallet,
+  carbs: Lucide.Droplet,
+  calendar: Lucide.Calendar,
+  bucket_card: Lucide.Folder,
+
   // Misc
-  tip: "💡",
-  celebrate: "🎉",
-  confetti: "✨",
-  search: "🔍",
-  filter: "🔽",
-  close: "✕",
-  check: "✓",
-  chevron_down: "▼",
-  chevron_up: "▲",
-  chevron_left: "◀",
-  chevron_right: "▶",
+  tip: Lucide.Lightbulb,
+  celebrate: Lucide.PartyPopper,
+  confetti: Lucide.Sparkles,
+  search: Lucide.Search,
+  filter: Lucide.Filter,
+  close: Lucide.X,
+  check: Lucide.Check,
+  chevron_down: Lucide.ChevronDown,
+  chevron_up: Lucide.ChevronUp,
+  chevron_left: Lucide.ChevronLeft,
+  chevron_right: Lucide.ChevronRight,
+  menu: Lucide.Menu,
+  stethoscope: Lucide.Stethoscope,
 } as const;
 
 export type IconKey = keyof typeof Icons;
 
 /**
- * Get icon by key with fallback.
+ * Get icon component by key with fallback to nothing.
  */
-export function getIcon(key: IconKey): string {
-  return Icons[key] ?? "";
+export function getIcon(key: IconKey): typeof Icons[IconKey] {
+  return Icons[key];
 }
 
 /**
@@ -121,6 +129,10 @@ export function iconLabel(key: IconKey): string {
     chevron_up: "Collapse",
     chevron_left: "Back",
     chevron_right: "Forward",
+    menu: "Menu",
+    stethoscope: "Medical disclaimer",
+    themeLight: "Switch to light mode",
+    themeDark: "Switch to dark mode",
   };
   return labels[key] ?? key;
 }

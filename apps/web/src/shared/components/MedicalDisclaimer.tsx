@@ -1,5 +1,6 @@
 import React from "react";
 import { PLANNING_AID_NOTICE } from "@glucoplate/domain";
+import { Icons } from "./Icons";
 
 /**
  * Standing reminder that GlucoPlate is a planning aid, not medical advice.
@@ -11,7 +12,8 @@ export const MedicalDisclaimer = ({ className = "" }: { className?: string }) =>
       className={`text-[10px] text-slate-400 italic ${className}`}
       style={{ color: "#94a3b8", fontSize: 10, fontStyle: "italic" }}
     >
-      🩺 {PLANNING_AID_NOTICE}
+      <Icons.stethoscope className="inline mr-1" size={10} strokeWidth={1.5} />{" "}
+      {PLANNING_AID_NOTICE}
     </p>
   );
 };
