@@ -8,12 +8,14 @@ import {
   togglePopupType,
   type PopupTrigger,
 } from "./popups.service.js";
+import { logger } from "../../lib/logger.js";
 
 export const llmRouter = Router();
 
 llmRouter.post("/api/llm/recommendation", requireAuth, async (req, res) => {
+  const userId = callerId(req);
+  logger.info("RECOMMENDATION ROUTE HIT", { userId, url: req.url, method: req.method });
   try {
-    const userId = callerId(req);
     const result = await generatePersonalisedRecommendation(userId);
     res.json({
       recommendation: result.text,
@@ -22,6 +24,7 @@ llmRouter.post("/api/llm/recommendation", requireAuth, async (req, res) => {
       notice: "GlucoPlate is a planning aid, not medical advice.",
     });
   } catch (error) {
+    logger.error("RECOMMENDATION ROUTE ERROR", { userId, error: String(error) });
     res.status(500).json({ error: "Could not generate recommendation." });
   }
 });
