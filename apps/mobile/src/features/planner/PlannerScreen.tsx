@@ -425,7 +425,7 @@ export default function PlannerScreen() {
                       </View>
                     ) : (
                       <View className="mt-6 flex flex-col items-center justify-center text-center">
-                        <Text className="text-2xl">🍂</Text>
+                      <Icons.bucket size={32} strokeWidth={2} />
                         <Text className="mt-2 text-sm text-slate-500">No suitable dish for this slot.</Text>
                         <TouchableOpacity onPress={() => router.push("/dashboard/dishes")} className="mt-2">
                           <Text className="text-xs font-semibold text-teal-600">Add one →</Text>
